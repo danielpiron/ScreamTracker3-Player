@@ -11,9 +11,12 @@ clean:
 	rm -fr $(BINDIR)
 	rm *.o
 
-$(BINDIR)/s3mplay: s3mplay.o s3m.o
+$(BINDIR)/s3mplay: s3mplay.o s3m.o s3mload.o
 	mkdir -p $(BINDIR)
-	$(CC) $(CFLAGS) -o $(BINDIR)/s3mplay s3mplay.o s3m.o -lportaudio
+	$(CC) $(CFLAGS) -o $(BINDIR)/s3mplay s3mload.o s3mplay.o s3m.o -lportaudio
+
+s3mload.o: $(SRCDIR)/s3mload.c $(SRCDIR)/s3m.h
+	$(CC) $(CFLAGS) -c $(SRCDIR)/s3mload.c
 
 s3mplay.o: $(SRCDIR)/s3mplay.c $(SRCDIR)/s3m.h
 	$(CC) $(CFLAGS) -c $(SRCDIR)/s3mplay.c
