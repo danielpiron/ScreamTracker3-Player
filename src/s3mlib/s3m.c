@@ -60,14 +60,6 @@ static float get_note_herz(int note_st3period)
     return 14317056.0 / note_st3period;
 }
 
-static void s3m_player_set_sample_period(struct S3MPlayerContext* ctx, struct S3MSampleStream* ss, int period)
-{
-    /* TODO: Assert period > 0 */
-    ss->sample_period = period;
-    ss->sample_step = get_note_herz(ss->sample_period) / ctx->sample_rate;
-    ss->sample_index = 0;
-}
-
 static void s3m_player_set_tempo(struct S3MPlayerContext* ctx, int tempo)
 {
     ctx->song_tempo = tempo;
@@ -144,14 +136,29 @@ void s3m_player_init(struct S3MPlayerContext* ctx, struct S3MFile* file, int sam
     ctx->current_pattern = file->orders[ctx->current_order];
 
     memset(ctx->sample_stream, 0, sizeof(ctx->sample_stream));
+    memset(ctx->channel, 0, sizeof(ctx->channel));
+
+    /* TODO: Channels need to be distributed according to channel settings */
+    for (i = 0; i < 16; i++)
+        ctx->sample_stream[i].channel = &ctx->channel[i];
 
     printf("Current Pattern: %d\n", ctx->current_pattern);
 }
 
-void s3m_accumulate_sample_stream(float* buffer, int length, struct S3MSampleStream* ss)
+void s3m_accumulate_sample_stream(float* buffer, int length, struct S3MSampleStream* ss, int sample_rate)
 {
-    if (ss->sample == NULL)
+    struct S3MChannel* chan = ss->channel;
+    float volume = chan->volume / 64.0;
+
+    if (volume == 0)
         return;
+
+    ss->sample = chan->instrument;
+    ss->sample_step = get_note_herz(chan->period) / sample_rate;
+    if (chan->note_on) {
+        ss->sample_index = 0;
+        chan->note_on = 0;
+    }
 
     while (length--) {
 
@@ -161,8 +168,8 @@ void s3m_accumulate_sample_stream(float* buffer, int length, struct S3MSampleStr
         if (ss->sample->header->flags & 1 && ss->sample_index >= ss->sample->header->loop_end)
             ss->sample_index -= (ss->sample->header->loop_end - ss->sample->header->loop_begin);
 
-        if (ss->volume > 0 && (int)ss->sample_index < ss->sample->header->length)
-            *buffer++ += ss->volume * (2.0 * ss->sample->sampledata[(int)ss->sample_index] / 255.0 - 1.0);
+        if ((int)ss->sample_index < ss->sample->header->length)
+            *buffer++ += volume * (2.0 * ss->sample->sampledata[(int)ss->sample_index] / 255.0 - 1.0);
     }
 }
 
@@ -187,30 +194,27 @@ void s3m_render_audio(float* buffer, int samples_remaining, struct S3MPlayerCont
 
         if (ctx->tick_counter == 0) {
 
-            for (c = 0; c < 8; c++) {
+            for (c = 0; c < 16; c++) {
 
                 struct S3MPatternEntry* entry = &ctx->patterns[ctx->current_pattern].row[ctx->current_row][c];
 
                 if (entry->note != 0xFF && entry->note != 0xFE) {
                     if (entry->inst) {
-                        ctx->sample_stream[c].current_inst = entry->inst - 1;
-                        ctx->sample_stream[c].sample = &ctx->file->instruments[ctx->sample_stream[c].current_inst];
-                        ctx->sample_stream[c].volume = ((entry->vol == 0xFF)
-                                                               ? ctx->sample_stream[c].sample->header->default_volume
-                                                               : entry->vol)
-                            / 64.0;
+                        ctx->channel[c].instrument = &ctx->file->instruments[entry->inst - 1];
+                        ctx->channel[c].volume = (entry->vol == 0xFF)
+                            ? ctx->channel[c].instrument->header->default_volume
+                            : entry->vol;
                     }
-                    if (ctx->sample_stream[c].sample)
-                        s3m_player_set_sample_period(ctx, &ctx->sample_stream[c],
-                            get_note_st3period(entry->note,
-                                                         ctx->sample_stream[c].sample->header->c2_speed));
+                    if (ctx->channel[c].instrument != NULL)
+                        ctx->channel[c].period = get_note_st3period(entry->note, ctx->channel[c].instrument->header->c2_speed);
+                    ctx->channel[c].note_on = 1;
                 } else {
                     if (entry->vol != 0xFF)
-                        ctx->sample_stream[c].volume = entry->vol / 64.0;
+                        ctx->channel[c].volume = entry->vol;
 
                     if (entry->note == 0xFE)
                         /* Cheap note cut by setting volume to 0. */
-                        ctx->sample_stream[c].volume = 0;
+                        ctx->channel[c].volume = 0;
                 }
 
                 handle_effects(ctx, c, entry->command, entry->cominfo);
@@ -244,7 +248,7 @@ void s3m_render_audio(float* buffer, int samples_remaining, struct S3MPlayerCont
         memset(buffer, 0, sizeof(float) * samples_to_render);
 
         for (c = 0; c < 8; c++)
-            s3m_accumulate_sample_stream(buffer, samples_to_render, &ctx->sample_stream[c]);
+            s3m_accumulate_sample_stream(buffer, samples_to_render, &ctx->sample_stream[c], ctx->sample_rate);
 
         for (c = 0; c < samples_to_render; c++)
             buffer[c] /= 8.0;
@@ -252,4 +256,3 @@ void s3m_render_audio(float* buffer, int samples_remaining, struct S3MPlayerCont
         buffer += samples_to_render;
     }
 }
-

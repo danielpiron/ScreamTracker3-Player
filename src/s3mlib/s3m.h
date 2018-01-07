@@ -126,13 +126,18 @@ struct S3MPattern {
     struct S3MPatternEntry row[64][32];
 };
 
+struct S3MChannel {
+    struct S3MSampleInstrument* instrument;
+    int note_on;
+    int period;
+    int volume;
+};
+
 struct S3MSampleStream {
     struct S3MSampleInstrument* sample;
+    struct S3MChannel* channel;
     float sample_index;
     float sample_step;
-    float volume; /* 0.0-1.0 */
-    int sample_period;
-    int current_inst;
 };
 
 struct S3MPlayerContext {
@@ -145,11 +150,12 @@ struct S3MPlayerContext {
     int samples_until_next_tick;
     int sample_rate;
 
-    struct S3MPattern *patterns;
+    struct S3MPattern* patterns;
     int current_order;
     int current_pattern;
 
-    struct S3MSampleStream sample_stream[8];
+    struct S3MChannel channel[32];
+    struct S3MSampleStream sample_stream[16];
 };
 
 extern int s3m_load(struct S3MFile*, const char*);
