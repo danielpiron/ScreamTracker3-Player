@@ -185,56 +185,59 @@ void handle_effects(struct S3MPlayerContext* ctx, int channel, enum S3MEffect ef
     }
 }
 
+void s3m_process_tick(struct S3MPlayerContext* ctx)
+{
+    int c;
+
+    if (ctx->tick_counter == 0) {
+        for (c = 0; c < 16; c++) {
+
+            struct S3MPatternEntry* entry = &ctx->patterns[ctx->current_pattern].row[ctx->current_row][c];
+
+            if (entry->note != 0xFF && entry->note != 0xFE) {
+                if (entry->inst) {
+                    ctx->channel[c].instrument = &ctx->file->instruments[entry->inst - 1];
+                    ctx->channel[c].volume = (entry->vol == 0xFF)
+                        ? ctx->channel[c].instrument->header->default_volume
+                        : entry->vol;
+                }
+                if (ctx->channel[c].instrument != NULL)
+                    ctx->channel[c].period = get_note_st3period(entry->note, ctx->channel[c].instrument->header->c2_speed);
+                ctx->channel[c].note_on = 1;
+            } else {
+                if (entry->vol != 0xFF)
+                    ctx->channel[c].volume = entry->vol;
+
+                if (entry->note == 0xFE)
+                    /* Cheap note cut by setting volume to 0. */
+                    ctx->channel[c].volume = 0;
+            }
+
+            handle_effects(ctx, c, entry->command, entry->cominfo);
+        }
+        ctx->current_row++;
+        if (ctx->current_row == PATTERN_ROWS) {
+            ctx->current_order++;
+            /* If we've reached the last order repeat song */
+            if (ctx->file->orders[ctx->current_order] == 0xFF)
+                ctx->current_order = 0;
+
+            ctx->current_pattern = ctx->file->orders[ctx->current_order];
+            printf("Current Pattern: %d\n", ctx->current_pattern);
+            ctx->current_row = 0;
+        }
+        ctx->tick_counter = ctx->song_speed;
+    }
+    ctx->tick_counter--;
+}
+
 void s3m_render_audio(float* buffer, int samples_remaining, struct S3MPlayerContext* ctx)
 {
     while (samples_remaining) {
-
         int samples_to_render;
-        int c;
-
-        if (ctx->tick_counter == 0) {
-
-            for (c = 0; c < 16; c++) {
-
-                struct S3MPatternEntry* entry = &ctx->patterns[ctx->current_pattern].row[ctx->current_row][c];
-
-                if (entry->note != 0xFF && entry->note != 0xFE) {
-                    if (entry->inst) {
-                        ctx->channel[c].instrument = &ctx->file->instruments[entry->inst - 1];
-                        ctx->channel[c].volume = (entry->vol == 0xFF)
-                            ? ctx->channel[c].instrument->header->default_volume
-                            : entry->vol;
-                    }
-                    if (ctx->channel[c].instrument != NULL)
-                        ctx->channel[c].period = get_note_st3period(entry->note, ctx->channel[c].instrument->header->c2_speed);
-                    ctx->channel[c].note_on = 1;
-                } else {
-                    if (entry->vol != 0xFF)
-                        ctx->channel[c].volume = entry->vol;
-
-                    if (entry->note == 0xFE)
-                        /* Cheap note cut by setting volume to 0. */
-                        ctx->channel[c].volume = 0;
-                }
-
-                handle_effects(ctx, c, entry->command, entry->cominfo);
-            }
-            ctx->current_row++;
-            if (ctx->current_row == PATTERN_ROWS) {
-                ctx->current_order++;
-                /* If we've reached the last order repeat song */
-                if (ctx->file->orders[ctx->current_order] == 0xFF)
-                    ctx->current_order = 0;
-
-                ctx->current_pattern = ctx->file->orders[ctx->current_order];
-                printf("Current Pattern: %d\n", ctx->current_pattern);
-                ctx->current_row = 0;
-            }
-            ctx->tick_counter = ctx->song_speed;
-        }
-
+        int i;
         if (ctx->samples_until_next_tick == 0) {
-            ctx->tick_counter--;
+            s3m_process_tick(ctx);
             ctx->samples_until_next_tick = ctx->samples_per_tick;
         }
 
@@ -247,11 +250,11 @@ void s3m_render_audio(float* buffer, int samples_remaining, struct S3MPlayerCont
 
         memset(buffer, 0, sizeof(float) * samples_to_render);
 
-        for (c = 0; c < 8; c++)
-            s3m_accumulate_sample_stream(buffer, samples_to_render, &ctx->sample_stream[c], ctx->sample_rate);
+        for (i = 0; i < 8; i++)
+            s3m_accumulate_sample_stream(buffer, samples_to_render, &ctx->sample_stream[i], ctx->sample_rate);
 
-        for (c = 0; c < samples_to_render; c++)
-            buffer[c] /= 8.0;
+        for (i = 0; i < samples_to_render; i++)
+            buffer[i] /= 8.0;
 
         buffer += samples_to_render;
     }
