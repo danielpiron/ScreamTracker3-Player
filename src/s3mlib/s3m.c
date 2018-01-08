@@ -175,7 +175,7 @@ void s3m_accumulate_sample_stream(float* buffer, int length, struct S3MSampleStr
 
 void s3m_process_tick(struct S3MPlayerContext* ctx)
 {
-    int c;
+    int c, last_row = 64;
 
     if (ctx->tick_counter == 0) {
         for (c = 0; c < 16; c++) {
@@ -206,6 +206,9 @@ void s3m_process_tick(struct S3MPlayerContext* ctx)
             case ST3_EFFECT_SET_SPEED:
                 ctx->song_speed = entry->cominfo;
                 break;
+            case ST3_EFFECT_BREAK_PATTERN:
+                last_row = ctx->current_row + 1;
+                break;
             case ST3_EFFECT_VOLUME_SLIDE:
                 if (entry->cominfo) {
                     x = entry->cominfo >> 4;
@@ -224,7 +227,7 @@ void s3m_process_tick(struct S3MPlayerContext* ctx)
 
         }
         ctx->current_row++;
-        if (ctx->current_row == PATTERN_ROWS) {
+        if (ctx->current_row == last_row) {
             ctx->current_order++;
             /* If we've reached the last order repeat song */
             if (ctx->file->orders[ctx->current_order] == 0xFF)
