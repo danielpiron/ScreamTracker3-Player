@@ -202,9 +202,24 @@ void s3m_process_tick(struct S3MPlayerContext* ctx)
             }
 
             switch (entry->command) {
+                int x, y;
             case ST3_EFFECT_SET_SPEED:
                 ctx->song_speed = entry->cominfo;
                 break;
+            case ST3_EFFECT_VOLUME_SLIDE:
+                if (entry->cominfo) {
+                    x = entry->cominfo >> 4;
+                    y = entry->cominfo & 15;
+
+                    if (y && x == 0)
+                        ctx->channel[c].effects.volume_slide_speed = -y;
+                    else if (x && y == 0)
+                        ctx->channel[c].effects.volume_slide_speed = x;
+                }
+                ctx->channel[c].current_effect = ST3_EFFECT_VOLUME_SLIDE;
+                break;
+            default:
+                ctx->channel[c].current_effect = 0;
             }
 
         }
@@ -222,6 +237,14 @@ void s3m_process_tick(struct S3MPlayerContext* ctx)
         ctx->tick_counter = ctx->song_speed;
     }
     ctx->tick_counter--;
+
+    for (c = 0; c < 16; c++) {
+        if (ctx->channel[c].current_effect == ST3_EFFECT_VOLUME_SLIDE) {
+            ctx->channel[c].volume += ctx->channel[c].effects.volume_slide_speed;
+            if (ctx->channel[c].volume > 64) ctx->channel[c].volume = 64;
+            if (ctx->channel[c].volume < 0) ctx->channel[c].volume = 0;
+        }
+    }
 }
 
 void s3m_render_audio(float* buffer, int samples_remaining, struct S3MPlayerContext* ctx)

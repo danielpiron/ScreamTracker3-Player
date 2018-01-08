@@ -131,6 +131,10 @@ struct S3MChannel {
     int note_on;
     int period;
     int volume;
+    int current_effect;
+    struct {
+        int volume_slide_speed;
+    } effects;
 };
 
 struct S3MSampleStream {
