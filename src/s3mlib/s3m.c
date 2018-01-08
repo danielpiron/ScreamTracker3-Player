@@ -269,7 +269,7 @@ void s3m_render_audio(float* buffer, int samples_remaining, struct S3MPlayerCont
 
         memset(buffer, 0, sizeof(float) * samples_to_render);
 
-        for (i = 0; i < 8; i++)
+        for (i = 0; i < 16; i++)
             s3m_accumulate_sample_stream(buffer, samples_to_render, &ctx->sample_stream[i], ctx->sample_rate);
 
         for (i = 0; i < samples_to_render; i++)
