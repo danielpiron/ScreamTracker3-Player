@@ -173,18 +173,6 @@ void s3m_accumulate_sample_stream(float* buffer, int length, struct S3MSampleStr
     }
 }
 
-void handle_effects(struct S3MPlayerContext* ctx, int channel, enum S3MEffect effect, int data)
-{
-    (void)channel;
-    switch (effect) {
-    case ST3_EFFECT_SET_SPEED:
-        ctx->song_speed = data;
-        break;
-    default:
-        return;
-    }
-}
-
 void s3m_process_tick(struct S3MPlayerContext* ctx)
 {
     int c;
@@ -213,7 +201,12 @@ void s3m_process_tick(struct S3MPlayerContext* ctx)
                     ctx->channel[c].volume = 0;
             }
 
-            handle_effects(ctx, c, entry->command, entry->cominfo);
+            switch (entry->command) {
+            case ST3_EFFECT_SET_SPEED:
+                ctx->song_speed = entry->cominfo;
+                break;
+            }
+
         }
         ctx->current_row++;
         if (ctx->current_row == PATTERN_ROWS) {
