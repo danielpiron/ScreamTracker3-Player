@@ -134,6 +134,7 @@ struct S3MChannel {
     int current_effect;
     struct {
         int volume_slide_speed;
+        int is_fine_slide;
     } effects;
 };
 

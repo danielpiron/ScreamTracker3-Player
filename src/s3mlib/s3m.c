@@ -214,12 +214,18 @@ void s3m_process_tick(struct S3MPlayerContext* ctx)
                     x = entry->cominfo >> 4;
                     y = entry->cominfo & 15;
 
-                    if (y && x == 0)
+                    if (y && (x == 0 || x == 15)) {
                         ctx->channel[c].effects.volume_slide_speed = -y;
-                    else if (x && y == 0)
+                        ctx->channel[c].effects.is_fine_slide = (x == 15);
+                    }
+                    else if (x && (y == 0 || y == 15)) {
                         ctx->channel[c].effects.volume_slide_speed = x;
+                        ctx->channel[c].effects.is_fine_slide = (y == 15);
+                    }
                 }
+
                 ctx->channel[c].current_effect = ST3_EFFECT_VOLUME_SLIDE;
+
                 break;
             default:
                 ctx->channel[c].current_effect = 0;
@@ -239,15 +245,24 @@ void s3m_process_tick(struct S3MPlayerContext* ctx)
         }
         ctx->tick_counter = ctx->song_speed;
     }
-    ctx->tick_counter--;
 
     for (c = 0; c < 16; c++) {
         if (ctx->channel[c].current_effect == ST3_EFFECT_VOLUME_SLIDE) {
-            ctx->channel[c].volume += ctx->channel[c].effects.volume_slide_speed;
-            if (ctx->channel[c].volume > 64) ctx->channel[c].volume = 64;
-            if (ctx->channel[c].volume < 0) ctx->channel[c].volume = 0;
+            int perform_slide = 0;
+
+            if (ctx->tick_counter == ctx->song_speed)
+                perform_slide = ctx->channel[c].effects.is_fine_slide;
+            else
+                perform_slide = !ctx->channel[c].effects.is_fine_slide;
+
+            if (perform_slide) {
+                ctx->channel[c].volume += ctx->channel[c].effects.volume_slide_speed;
+                if (ctx->channel[c].volume > 64) ctx->channel[c].volume = 64;
+                if (ctx->channel[c].volume < 0) ctx->channel[c].volume = 0;
+            }
         }
     }
+    ctx->tick_counter--;
 }
 
 void s3m_render_audio(float* buffer, int samples_remaining, struct S3MPlayerContext* ctx)
