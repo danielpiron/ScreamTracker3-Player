@@ -1,3 +1,7 @@
+include_directories(../s3mlib)
+if (APPLE)
+	include_directories(/usr/local/include)
+	link_directories(/usr/local/lib)
+endif (APPLE)
 add_executable(s3mplay main.c)
 target_link_libraries(s3mplay s3mlib portaudio)
-include_directories(../s3mlib)
