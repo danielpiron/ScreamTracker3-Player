@@ -6,8 +6,7 @@
 static int _s3m_file_is_valid(struct S3MFile* s3m)
 {
 
-    if (s3m->header->magic_num == 0x1a
-        && s3m->header->type == 16
+    if (s3m->header->type == 16
         && memcmp(s3m->header->SCRM, "SCRM", 4) == 0) {
         return 1;
     }

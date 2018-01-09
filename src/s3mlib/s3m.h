@@ -36,9 +36,9 @@
 
 struct S3MModuleHeader {
     char song_name[28];
-    unsigned char magic_num; /* Must be 0x1A */
+    unsigned char gap_0; /* Must be 0x1A */
     unsigned char type; /* Must be 16 */
-    char gap_0[2]; /* 0x1E-0x1F */
+    char gap_1[2]; /* 0x1E-0x1F */
     short order_count;
     short instrument_count;
     short pattern_count;
@@ -52,7 +52,7 @@ struct S3MModuleHeader {
     unsigned char master_volume;
     unsigned char ultra_click_removal;
     unsigned char default_pan;
-    char gap_1[8]; /* 0x36-0x0x3D */
+    char gap_2[8]; /* 0x36-0x0x3D */
     short special; /* pointer to special custom data (not used by ST3.01) */
     unsigned char channel_settings[32]; /* 255=unused, +128=disabled */
 };
