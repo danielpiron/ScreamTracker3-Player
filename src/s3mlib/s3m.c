@@ -142,6 +142,12 @@ void s3m_player_init(struct S3MPlayerContext* ctx, struct S3MFile* file, int sam
     for (i = 0; i < 16; i++)
         ctx->sample_stream[i].channel = &ctx->channel[i];
 
+    /* Hardcode some default panning values */
+    for (i = 0; i < 8; i++) {
+        ctx->channel[i * 2].panning = 0x03; /* Even channels are left dominant */
+        ctx->channel[i * 2 + 1].panning = 0x0C; /* Odd channels are right dominant */
+    }
+
     printf("Current Pattern: %d\n", ctx->current_pattern);
 }
 
@@ -149,6 +155,7 @@ void s3m_accumulate_sample_stream(float* buffer, int length, struct S3MSampleStr
 {
     struct S3MChannel* chan = ss->channel;
     float volume = chan->volume / 64.0;
+    float panning = chan->panning / 15.0;
 
     if (volume == 0)
         return;
@@ -171,8 +178,8 @@ void s3m_accumulate_sample_stream(float* buffer, int length, struct S3MSampleStr
         if ((int)ss->sample_index < ss->sample->header->length) {
             float sample = (2.0 * ss->sample->sampledata[(int)ss->sample_index] / 255.0 - 1.0);
             /* Put the same sample into left and right channels to mimic mono */
-            *buffer++ += volume * sample;
-            *buffer++ += volume * sample;
+            *buffer++ += (1.0 - panning) * volume * sample;
+            *buffer++ += panning * volume * sample;
         }
     }
 }
