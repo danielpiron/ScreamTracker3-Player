@@ -168,8 +168,12 @@ void s3m_accumulate_sample_stream(float* buffer, int length, struct S3MSampleStr
         if (ss->sample->header->flags & 1 && ss->sample_index >= ss->sample->header->loop_end)
             ss->sample_index -= (ss->sample->header->loop_end - ss->sample->header->loop_begin);
 
-        if ((int)ss->sample_index < ss->sample->header->length)
-            *buffer++ += volume * (2.0 * ss->sample->sampledata[(int)ss->sample_index] / 255.0 - 1.0);
+        if ((int)ss->sample_index < ss->sample->header->length) {
+            float sample = (2.0 * ss->sample->sampledata[(int)ss->sample_index] / 255.0 - 1.0);
+            /* Put the same sample into left and right channels to mimic mono */
+            *buffer++ += volume * sample;
+            *buffer++ += volume * sample;
+        }
     }
 }
 
@@ -282,14 +286,14 @@ void s3m_render_audio(float* buffer, int samples_remaining, struct S3MPlayerCont
         samples_remaining -= samples_to_render;
         ctx->samples_until_next_tick -= samples_to_render;
 
-        memset(buffer, 0, sizeof(float) * samples_to_render);
+        memset(buffer, 0, sizeof(float) * samples_to_render * 2);
 
         for (i = 0; i < 16; i++)
             s3m_accumulate_sample_stream(buffer, samples_to_render, &ctx->sample_stream[i], ctx->sample_rate);
 
-        for (i = 0; i < samples_to_render; i++)
+        for (i = 0; i < samples_to_render * 2; i++)
             buffer[i] /= 8.0;
 
-        buffer += samples_to_render;
+        buffer += samples_to_render * 2;
     }
 }

@@ -60,7 +60,7 @@ int main(int argc, char* argv[])
         goto error;
     }
 
-    output_params.channelCount = 1; /* Mono */
+    output_params.channelCount = 2; /* Stereo */
     output_params.sampleFormat = paFloat32;
     output_params.suggestedLatency = Pa_GetDeviceInfo(output_params.device)->defaultLowInputLatency;
     output_params.hostApiSpecificStreamInfo = NULL;
