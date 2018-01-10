@@ -203,9 +203,14 @@ void s3m_process_tick(struct S3MPlayerContext* ctx)
                         ? ctx->channel[c].instrument->header->default_volume
                         : entry->vol;
                 }
-                if (ctx->channel[c].instrument != NULL)
-                    ctx->channel[c].period = get_note_st3period(entry->note, ctx->channel[c].instrument->header->c2_speed);
-                ctx->channel[c].note_on = 1;
+                if (ctx->channel[c].instrument != NULL) {
+                    if (entry->command == ST3_EFFECT_TONE_PORTAMENTO) {
+                        ctx->channel[c].effects.portamento_target = get_note_st3period(entry->note, ctx->channel[c].instrument->header->c2_speed);
+                    } else {
+                        ctx->channel[c].period = get_note_st3period(entry->note, ctx->channel[c].instrument->header->c2_speed);
+                        ctx->channel[c].note_on = 1;
+                    }
+                }
             } else {
                 if (entry->vol != 0xFF)
                     ctx->channel[c].volume = entry->vol;
@@ -240,14 +245,28 @@ void s3m_process_tick(struct S3MPlayerContext* ctx)
 
                 break;
             case ST3_EFFECT_SLIDE_DOWN: /* E */
-                if (entry->cominfo)
-                    ctx->channel[c].effects.pitch_slide_speed = entry->cominfo;
-                ctx->channel[c].current_effect = ST3_EFFECT_SLIDE_DOWN;
-                break;
             case ST3_EFFECT_SLIDE_UP: /* F */
+                if (entry->cominfo) {
+                    if (x == 15) {
+                        ctx->channel[c].effects.pitch_slide_type = 1;
+                        ctx->channel[c].effects.pitch_slide_speed = y;
+                    }
+                    else if (x == 14) {
+                        ctx->channel[c].effects.pitch_slide_type = 2;
+                        ctx->channel[c].effects.pitch_slide_speed = y;
+                    }
+                    else {
+                        ctx->channel[c].effects.pitch_slide_type = 0;
+                        ctx->channel[c].effects.pitch_slide_speed = entry->cominfo;
+                    }
+                }
+                ctx->channel[c].current_effect = entry->command;
+                break;
+            case ST3_EFFECT_TONE_PORTAMENTO:
                 if (entry->cominfo)
-                    ctx->channel[c].effects.pitch_slide_speed = entry->cominfo;
-                ctx->channel[c].current_effect = ST3_EFFECT_SLIDE_UP;
+                    ctx->channel[c].effects.portamento_speed = entry->cominfo;
+
+                ctx->channel[c].current_effect = ST3_EFFECT_TONE_PORTAMENTO;
                 break;
             case ST3_EFFECT_VIBRATO:
                 if (entry->cominfo) {
@@ -292,17 +311,47 @@ void s3m_process_tick(struct S3MPlayerContext* ctx)
             }
         }
         if (ctx->channel[c].current_effect == ST3_EFFECT_VIBRATO) {
-            int s = 64 * sin(2 * M_PI * ((ctx->channel[c].effects.vibrato.position & 0xFF) / 255.0));
-            int delta = (ctx->channel[c].effects.vibrato.depth * s) >> 5;
+            int s = 256 * sin(2 * M_PI * ((ctx->channel[c].effects.vibrato.position & 0xFF) / 255.0));
+            int delta = (4 * ctx->channel[c].effects.vibrato.depth * s) >> 8;
             ctx->channel[c].period -=  delta;
             ctx->channel[c].effects.vibrato.position += ctx->channel[c].effects.vibrato.speed * 4;
         }
-        if (ctx->channel[c].current_effect == ST3_EFFECT_SLIDE_UP)
-            if (ctx->tick_counter != ctx->song_speed)
-                ctx->channel[c].period -= ctx->channel[c].effects.volume_slide_speed;
-        if (ctx->channel[c].current_effect == ST3_EFFECT_SLIDE_DOWN)
-            if (ctx->tick_counter != ctx->song_speed)
-                ctx->channel[c].period += ctx->channel[c].effects.volume_slide_speed;
+
+        if (ctx->channel[c].current_effect == ST3_EFFECT_SLIDE_UP) {
+            if (ctx->channel[c].effects.pitch_slide_type) {
+                if (ctx->tick_counter == ctx->song_speed) {
+                    int factor = (ctx->channel[c].effects.pitch_slide_type == 2) ? 1 : 4;
+                    ctx->channel[c].period -= ctx->channel[c].effects.pitch_slide_speed * factor;
+                }
+            }
+            else if (ctx->tick_counter != ctx->song_speed)
+                ctx->channel[c].period -= ctx->channel[c].effects.pitch_slide_speed * 4;
+        }
+        if (ctx->channel[c].current_effect == ST3_EFFECT_SLIDE_DOWN) {
+            if (ctx->channel[c].effects.pitch_slide_type) {
+                if (ctx->tick_counter == ctx->song_speed) {
+                    int factor = (ctx->channel[c].effects.pitch_slide_type == 2) ? 1 : 4;
+                    ctx->channel[c].period += ctx->channel[c].effects.pitch_slide_speed * factor;
+                }
+            }
+            else if (ctx->tick_counter != ctx->song_speed)
+                ctx->channel[c].period += ctx->channel[c].effects.pitch_slide_speed * 4;
+        }
+
+
+        if (ctx->channel[c].current_effect == ST3_EFFECT_TONE_PORTAMENTO) {
+           if (ctx->channel[c].period < ctx->channel[c].effects.portamento_target) {
+               ctx->channel[c].period += ctx->channel[c].effects.portamento_speed * 4;
+               if (ctx->channel[c].period > ctx->channel[c].effects.portamento_target)
+                   ctx->channel[c].period = ctx->channel[c].effects.portamento_target;
+           }
+           else if (ctx->channel[c].period > ctx->channel[c].effects.portamento_target) {
+               ctx->channel[c].period -= ctx->channel[c].effects.portamento_speed * 4;
+               if (ctx->channel[c].period < ctx->channel[c].effects.portamento_target)
+                   ctx->channel[c].period = ctx->channel[c].effects.portamento_target;
+           }
+        }
+
     }
     ctx->tick_counter--;
 }

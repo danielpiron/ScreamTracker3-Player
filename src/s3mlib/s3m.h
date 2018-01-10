@@ -139,8 +139,11 @@ struct S3MChannel {
             int depth;
             int speed;
         } vibrato;
+        int portamento_speed;
+        int portamento_target;
         int volume_slide_speed;
         int pitch_slide_speed;
+        int pitch_slide_type;
         int is_fine_slide;
     } effects;
 };
