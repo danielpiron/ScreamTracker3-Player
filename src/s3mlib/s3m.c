@@ -239,6 +239,16 @@ void s3m_process_tick(struct S3MPlayerContext* ctx)
                 ctx->channel[c].current_effect = ST3_EFFECT_VOLUME_SLIDE;
 
                 break;
+            case ST3_EFFECT_SLIDE_DOWN: /* E */
+                if (entry->cominfo)
+                    ctx->channel[c].effects.pitch_slide_speed = entry->cominfo;
+                ctx->channel[c].current_effect = ST3_EFFECT_SLIDE_DOWN;
+                break;
+            case ST3_EFFECT_SLIDE_UP: /* F */
+                if (entry->cominfo)
+                    ctx->channel[c].effects.pitch_slide_speed = entry->cominfo;
+                ctx->channel[c].current_effect = ST3_EFFECT_SLIDE_UP;
+                break;
             case ST3_EFFECT_VIBRATO:
                 if (entry->cominfo) {
                     ctx->channel[c].effects.vibrato.position = 0;
@@ -287,6 +297,12 @@ void s3m_process_tick(struct S3MPlayerContext* ctx)
             ctx->channel[c].period -=  delta;
             ctx->channel[c].effects.vibrato.position += ctx->channel[c].effects.vibrato.speed * 4;
         }
+        if (ctx->channel[c].current_effect == ST3_EFFECT_SLIDE_UP)
+            if (ctx->tick_counter != ctx->song_speed)
+                ctx->channel[c].period -= ctx->channel[c].effects.volume_slide_speed;
+        if (ctx->channel[c].current_effect == ST3_EFFECT_SLIDE_DOWN)
+            if (ctx->tick_counter != ctx->song_speed)
+                ctx->channel[c].period += ctx->channel[c].effects.volume_slide_speed;
     }
     ctx->tick_counter--;
 }
