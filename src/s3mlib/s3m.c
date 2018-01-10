@@ -292,7 +292,7 @@ void s3m_process_tick(struct S3MPlayerContext* ctx)
             }
         }
         if (ctx->channel[c].current_effect == ST3_EFFECT_VIBRATO) {
-            int s = 128 * sin(2 * M_PI * ((ctx->channel[c].effects.vibrato.position & 0xFF) / 255.0));
+            int s = 64 * sin(2 * M_PI * ((ctx->channel[c].effects.vibrato.position & 0xFF) / 255.0));
             int delta = (ctx->channel[c].effects.vibrato.depth * s) >> 5;
             ctx->channel[c].period -=  delta;
             ctx->channel[c].effects.vibrato.position += ctx->channel[c].effects.vibrato.speed * 4;
