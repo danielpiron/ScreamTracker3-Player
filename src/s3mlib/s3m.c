@@ -1,37 +1,40 @@
 #include "s3m.h"
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 #define PATTERN_ROWS 64
 #define PATTERN_CHANNELS 32
+#ifndef M_PI
+#define M_PI 3.14159265358979323846264338327950288
+#endif
 
 static struct S3MPatternEntry empty_note = { 0xFF, 0x00, 0xFF, 0xFF, 0x00 };
 
 enum S3MEffect {
-    ST3_EFFECT_EMPTY = 0,
-    ST3_EFFECT_SET_SPEED,
-    ST3_EFFECT_JUMP_TO_ORDER,
-    ST3_EFFECT_BREAK_PATTERN,
-    ST3_EFFECT_VOLUME_SLIDE,
-    ST3_EFFECT_SLIDE_DOWN,
-    ST3_EFFECT_SLIDE_UP,
-    ST3_EFFECT_TONE_PORTAMENTO,
-    ST3_EFFECT_VIBRATO,
-    ST3_EFFECT_TREMOR,
-    ST3_EFFECT_ARPEGGIO,
-    ST3_EFFECT_VIBRATO_AND_VOLUME_SLIDE,
-    ST3_EFFECT_PORTAMENTO_AND_VOLUME_SLIDE,
-    ST3_EFFECT_SET_SAMPLE_OFFSET,
-    ST3_EFFECT_UNUSED1,
-    ST3_EFFECT_RETRIG,
-    ST3_EFFECT_TREMOLO,
-    ST3_EFFECT_SPECIAL,
-    ST3_EFFECT_TEMPO,
-    ST3_EFFECT_FINE_VIBRATO,
-    ST3_EFFECT_GLOBAL_VOLUME
+    ST3_EFFECT_EMPTY = 0, /* . */
+    ST3_EFFECT_SET_SPEED, /* A */
+    ST3_EFFECT_JUMP_TO_ORDER, /* B */
+    ST3_EFFECT_BREAK_PATTERN, /* C */
+    ST3_EFFECT_VOLUME_SLIDE, /* D */
+    ST3_EFFECT_SLIDE_DOWN, /* E */
+    ST3_EFFECT_SLIDE_UP, /* F */
+    ST3_EFFECT_TONE_PORTAMENTO, /* G */
+    ST3_EFFECT_VIBRATO, /* H */
+    ST3_EFFECT_TREMOR, /* I */
+    ST3_EFFECT_ARPEGGIO, /* J */
+    ST3_EFFECT_VIBRATO_AND_VOLUME_SLIDE, /* K */
+    ST3_EFFECT_PORTAMENTO_AND_VOLUME_SLIDE, /* L */
+    ST3_EFFECT_SET_SAMPLE_OFFSET, /* M */
+    ST3_EFFECT_UNUSED1, /* N */
+    ST3_EFFECT_RETRIG, /* O */
+    ST3_EFFECT_TREMOLO, /* P */
+    ST3_EFFECT_SPECIAL, /* A */
+    ST3_EFFECT_TEMPO, /* A */
+    ST3_EFFECT_FINE_VIBRATO, /* A */
+    ST3_EFFECT_GLOBAL_VOLUME /* A */
 };
-
 static const int st3period_table[] = {
     1712, /* C  */
     1616, /* C# */
@@ -186,7 +189,7 @@ void s3m_accumulate_sample_stream(float* buffer, int length, struct S3MSampleStr
 
 void s3m_process_tick(struct S3MPlayerContext* ctx)
 {
-    int c, last_row = 64;
+    int c, x, y, last_row = 64;
 
     if (ctx->tick_counter == 0) {
         for (c = 0; c < 16; c++) {
@@ -212,8 +215,9 @@ void s3m_process_tick(struct S3MPlayerContext* ctx)
                     ctx->channel[c].volume = 0;
             }
 
+            x = entry->cominfo >> 4;
+            y = entry->cominfo & 15;
             switch (entry->command) {
-                int x, y;
             case ST3_EFFECT_SET_SPEED:
                 ctx->song_speed = entry->cominfo;
                 break;
@@ -222,9 +226,6 @@ void s3m_process_tick(struct S3MPlayerContext* ctx)
                 break;
             case ST3_EFFECT_VOLUME_SLIDE:
                 if (entry->cominfo) {
-                    x = entry->cominfo >> 4;
-                    y = entry->cominfo & 15;
-
                     if (y && (x == 0 || x == 15)) {
                         ctx->channel[c].effects.volume_slide_speed = -y;
                         ctx->channel[c].effects.is_fine_slide = (x == 15);
@@ -238,6 +239,14 @@ void s3m_process_tick(struct S3MPlayerContext* ctx)
                 ctx->channel[c].current_effect = ST3_EFFECT_VOLUME_SLIDE;
 
                 break;
+            case ST3_EFFECT_VIBRATO:
+                if (entry->cominfo) {
+                    ctx->channel[c].effects.vibrato.position = 0;
+                    ctx->channel[c].effects.vibrato.speed = x;
+                    ctx->channel[c].effects.vibrato.depth = y;
+                }
+                ctx->channel[c].current_effect = ST3_EFFECT_VIBRATO;
+        break;
             default:
                 ctx->channel[c].current_effect = 0;
             }
@@ -271,6 +280,12 @@ void s3m_process_tick(struct S3MPlayerContext* ctx)
                 if (ctx->channel[c].volume > 64) ctx->channel[c].volume = 64;
                 if (ctx->channel[c].volume < 0) ctx->channel[c].volume = 0;
             }
+        }
+        if (ctx->channel[c].current_effect == ST3_EFFECT_VIBRATO) {
+            int s = 128 * sin(2 * M_PI * ((ctx->channel[c].effects.vibrato.position & 0xFF) / 255.0));
+            int delta = (ctx->channel[c].effects.vibrato.depth * s) >> 5;
+            ctx->channel[c].period -=  delta;
+            ctx->channel[c].effects.vibrato.position += ctx->channel[c].effects.vibrato.speed * 4;
         }
     }
     ctx->tick_counter--;

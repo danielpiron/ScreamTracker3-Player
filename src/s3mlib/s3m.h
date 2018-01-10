@@ -134,6 +134,11 @@ struct S3MChannel {
     int panning; /* 0 (left) - F (right) */
     int current_effect;
     struct {
+        struct {
+            int position;
+            int depth;
+            int speed;
+        } vibrato;
         int volume_slide_speed;
         int is_fine_slide;
     } effects;
