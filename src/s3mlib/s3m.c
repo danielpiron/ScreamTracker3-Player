@@ -280,6 +280,7 @@ void s3m_process_tick(struct S3MPlayerContext* ctx)
                     } else {
                         ctx->channel[c].effects.vibrato.position = 0;
                         ctx->channel[c].period = get_note_st3period(entry->note, ctx->channel[c].instrument->header->c2_speed);
+                        ctx->channel[c].effects.vibrato.old_period = ctx->channel[c].period;
                         ctx->channel[c].note_on = 1;
                     }
                 }
@@ -290,6 +291,17 @@ void s3m_process_tick(struct S3MPlayerContext* ctx)
                 if (entry->note == 0xFE)
                     /* Cheap note cut by setting volume to 0. */
                     ctx->channel[c].volume = 0;
+            }
+
+
+            if (ctx->channel[c].current_effect != ST3_EFFECT_VIBRATO
+                && entry->command == ST3_EFFECT_VIBRATO) {
+                ctx->channel[c].effects.vibrato.old_period = ctx->channel[c].period;
+            }
+
+            if (ctx->channel[c].current_effect == ST3_EFFECT_VIBRATO
+                && entry->command != ST3_EFFECT_VIBRATO) {
+                ctx->channel[c].period = ctx->channel[c].effects.vibrato.old_period;
             }
 
             x = entry->cominfo >> 4;

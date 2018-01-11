@@ -135,6 +135,7 @@ struct S3MChannel {
     int current_effect;
     struct {
         struct {
+            int old_period;
             int position;
             int depth;
             int speed;
