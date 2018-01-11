@@ -83,7 +83,7 @@ void print_row(struct S3MPattern* pattern, int row) {
 }
 
 enum S3MEffect {
-    ST3_EFFECT_EMPTY = 0, /* . */
+    ST3_EFFECT_UNUSED0 = 0, /* . */
     ST3_EFFECT_SET_SPEED, /* A */
     ST3_EFFECT_JUMP_TO_ORDER, /* B */
     ST3_EFFECT_BREAK_PATTERN, /* C */
@@ -96,14 +96,17 @@ enum S3MEffect {
     ST3_EFFECT_ARPEGGIO, /* J */
     ST3_EFFECT_VIBRATO_AND_VOLUME_SLIDE, /* K */
     ST3_EFFECT_PORTAMENTO_AND_VOLUME_SLIDE, /* L */
-    ST3_EFFECT_SET_SAMPLE_OFFSET, /* M */
-    ST3_EFFECT_UNUSED1, /* N */
-    ST3_EFFECT_RETRIG, /* O */
-    ST3_EFFECT_TREMOLO, /* P */
-    ST3_EFFECT_SPECIAL, /* A */
-    ST3_EFFECT_TEMPO, /* A */
-    ST3_EFFECT_FINE_VIBRATO, /* A */
-    ST3_EFFECT_GLOBAL_VOLUME /* A */
+    ST3_EFFECT_UNUSED1,
+    ST3_EFFECT_UNUSED2,
+    ST3_EFFECT_SET_SAMPLE_OFFSET, /* O */
+    ST3_EFFECT_UNUSED3,
+    ST3_EFFECT_RETRIG, /* Q */
+    ST3_EFFECT_TREMOLO, /* R */
+    ST3_EFFECT_SPECIAL, /* S */
+    ST3_EFFECT_TEMPO, /* T */
+    ST3_EFFECT_FINE_VIBRATO, /* U */
+    ST3_EFFECT_GLOBAL_VOLUME,/* V */
+    ST3_EFFECT_EMPTY = 255
 };
 static const int st3period_table[] = {
     1712, /* C  */
