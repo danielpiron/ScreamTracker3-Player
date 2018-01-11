@@ -229,6 +229,8 @@ void s3m_process_tick(struct S3MPlayerContext* ctx)
             case ST3_EFFECT_BREAK_PATTERN:
                 last_row = ctx->current_row + 1;
                 break;
+            case ST3_EFFECT_PORTAMENTO_AND_VOLUME_SLIDE:
+            case ST3_EFFECT_VIBRATO_AND_VOLUME_SLIDE:
             case ST3_EFFECT_VOLUME_SLIDE:
                 if (entry->cominfo) {
                     if (y && (x == 0 || x == 15)) {
@@ -240,9 +242,7 @@ void s3m_process_tick(struct S3MPlayerContext* ctx)
                         ctx->channel[c].effects.is_fine_slide = (y == 15);
                     }
                 }
-
-                ctx->channel[c].current_effect = ST3_EFFECT_VOLUME_SLIDE;
-
+                ctx->channel[c].current_effect = entry->command;
                 break;
             case ST3_EFFECT_SLIDE_DOWN: /* E */
             case ST3_EFFECT_SLIDE_UP: /* F */
@@ -296,7 +296,9 @@ void s3m_process_tick(struct S3MPlayerContext* ctx)
     }
 
     for (c = 0; c < 16; c++) {
-        if (ctx->channel[c].current_effect == ST3_EFFECT_VOLUME_SLIDE) {
+        if (ctx->channel[c].current_effect == ST3_EFFECT_VOLUME_SLIDE
+            || ctx->channel[c].current_effect == ST3_EFFECT_PORTAMENTO_AND_VOLUME_SLIDE
+            || ctx->channel[c].current_effect == ST3_EFFECT_VIBRATO_AND_VOLUME_SLIDE) {
             int perform_slide = 0;
 
             if (ctx->tick_counter == ctx->song_speed)
@@ -310,7 +312,8 @@ void s3m_process_tick(struct S3MPlayerContext* ctx)
                 if (ctx->channel[c].volume < 0) ctx->channel[c].volume = 0;
             }
         }
-        if (ctx->channel[c].current_effect == ST3_EFFECT_VIBRATO) {
+        if (ctx->channel[c].current_effect == ST3_EFFECT_VIBRATO
+            || ctx->channel[c].current_effect == ST3_EFFECT_VIBRATO_AND_VOLUME_SLIDE) {
             int s = 256 * sin(2 * M_PI * ((ctx->channel[c].effects.vibrato.position & 0xFF) / 255.0));
             int delta = (4 * ctx->channel[c].effects.vibrato.depth * s) >> 8;
             ctx->channel[c].period +=  delta;
@@ -337,9 +340,8 @@ void s3m_process_tick(struct S3MPlayerContext* ctx)
             else if (ctx->tick_counter != ctx->song_speed)
                 ctx->channel[c].period += ctx->channel[c].effects.pitch_slide_speed * 4;
         }
-
-
-        if (ctx->channel[c].current_effect == ST3_EFFECT_TONE_PORTAMENTO) {
+        if (ctx->channel[c].current_effect == ST3_EFFECT_TONE_PORTAMENTO
+            || ctx->channel[c].current_effect == ST3_EFFECT_PORTAMENTO_AND_VOLUME_SLIDE) {
            if (ctx->channel[c].period < ctx->channel[c].effects.portamento_target) {
                ctx->channel[c].period += ctx->channel[c].effects.portamento_speed * 4;
                if (ctx->channel[c].period > ctx->channel[c].effects.portamento_target)
