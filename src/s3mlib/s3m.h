@@ -146,6 +146,8 @@ struct S3MChannel {
         int pitch_slide_speed;
         int pitch_slide_type;
         int is_fine_slide;
+        int retrig_counter;
+        int retrig_frequency;
     } effects;
 };
 

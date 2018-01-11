@@ -361,7 +361,14 @@ void s3m_process_tick(struct S3MPlayerContext* ctx)
                     ctx->channel[c].effects.vibrato.depth = y;
                 }
                 ctx->channel[c].current_effect = ST3_EFFECT_VIBRATO;
-        break;
+                break;
+            case ST3_EFFECT_RETRIG:
+                if (entry->cominfo) {
+                    ctx->channel[c].effects.retrig_frequency = y;
+                }
+                ctx->channel[c].effects.retrig_counter = 0;
+                ctx->channel[c].current_effect = ST3_EFFECT_RETRIG;
+                break;
             default:
                 ctx->channel[c].current_effect = 0;
             }
@@ -441,7 +448,12 @@ void s3m_process_tick(struct S3MPlayerContext* ctx)
                    ctx->channel[c].period = ctx->channel[c].effects.portamento_target;
            }
         }
-
+        if (ctx->channel[c].current_effect == ST3_EFFECT_RETRIG) {
+            if (ctx->channel[c].effects.retrig_counter++ == ctx->channel[c].effects.retrig_frequency) {
+                ctx->channel[c].note_on = 1;
+                ctx->channel[c].effects.retrig_counter = 0;
+            }
+        }
     }
     ctx->tick_counter--;
 }
