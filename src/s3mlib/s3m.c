@@ -130,7 +130,7 @@ static int get_note_st3period(int raw_note, int c2speed)
 
 static float get_note_herz(int note_st3period)
 {
-    return 14317056.0 / note_st3period;
+    return 14317456.0 / note_st3period;
 }
 
 static void s3m_player_set_tempo(struct S3MPlayerContext* ctx, int tempo)
