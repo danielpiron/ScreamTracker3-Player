@@ -278,6 +278,7 @@ void s3m_process_tick(struct S3MPlayerContext* ctx)
                     if (entry->command == ST3_EFFECT_TONE_PORTAMENTO) {
                         ctx->channel[c].effects.portamento_target = get_note_st3period(entry->note, ctx->channel[c].instrument->header->c2_speed);
                     } else {
+                        ctx->channel[c].effects.vibrato.position = 0;
                         ctx->channel[c].period = get_note_st3period(entry->note, ctx->channel[c].instrument->header->c2_speed);
                         ctx->channel[c].note_on = 1;
                     }
@@ -341,7 +342,6 @@ void s3m_process_tick(struct S3MPlayerContext* ctx)
                 break;
             case ST3_EFFECT_VIBRATO:
                 if (entry->cominfo) {
-                    ctx->channel[c].effects.vibrato.position = 0;
                     ctx->channel[c].effects.vibrato.speed = x;
                     ctx->channel[c].effects.vibrato.depth = y;
                 }
