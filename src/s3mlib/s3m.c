@@ -12,6 +12,76 @@
 
 static struct S3MPatternEntry empty_note = { 0xFF, 0x00, 0xFF, 0xFF, 0x00 };
 
+static char* note_names[] = {
+    "C-",
+    "C#",
+    "D-",
+    "D#",
+    "E-",
+    "F-",
+    "F#",
+    "G-",
+    "G#",
+    "A-",
+    "A#",
+    "B-"
+};
+
+static char command_names[] = ".ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+/*
+ * C-4 01 32 .00
+ * 0123456789ABC
+ * 14 characters including null terminator
+ */
+void render_pattern_entry(char *buf, const struct S3MPatternEntry* entry) {
+    char empty_entry[] = "... .. .. .00";
+    char digit_buf[16];
+    strncpy(buf, empty_entry, 16);
+    (void)entry;
+    (void)digit_buf;
+    (void)note_names;
+    (void)command_names;
+
+    if (entry->note != 255) {
+        if (entry->note == 254) {
+            memcpy(&buf[0], "---", 3);
+        }
+        else {
+            int note = entry->note & 0x0F;
+            int octave = entry->note >> 4;
+            memcpy(&buf[0], note_names[note], 2);
+            buf[2] = '0' + octave;
+        }
+    }
+    if (entry->inst) {
+      snprintf(digit_buf, sizeof(digit_buf), "%02d", entry->inst);
+      memcpy(&buf[4], digit_buf, 2);
+    }
+
+    if (entry->vol != 255) {
+      snprintf(digit_buf, sizeof(digit_buf), "%02d", entry->vol);
+      memcpy(&buf[7], digit_buf, 2);
+    }
+
+    if (entry->command != 255) {
+        buf[10] = command_names[entry->command];
+        snprintf(digit_buf, sizeof(digit_buf), "%02X", entry->cominfo);
+        memcpy(&buf[11], digit_buf, 2);
+    }
+}
+
+void print_row(struct S3MPattern* pattern, int row) {
+    int i;
+    char buffer[16];
+    char *prefix = "";
+    for (i = 0; i < 8; i++) {
+        render_pattern_entry(buffer, &pattern->row[row][i]);
+        printf("%s%s", prefix, buffer);
+        prefix = " | ";
+    }
+    printf("\n");
+}
+
 enum S3MEffect {
     ST3_EFFECT_EMPTY = 0, /* . */
     ST3_EFFECT_SET_SPEED, /* A */
@@ -192,6 +262,7 @@ void s3m_process_tick(struct S3MPlayerContext* ctx)
     int c, x, y, last_row = 64;
 
     if (ctx->tick_counter == 0) {
+        print_row(&ctx->patterns[ctx->current_pattern], ctx->current_row);
         for (c = 0; c < 16; c++) {
 
             struct S3MPatternEntry* entry = &ctx->patterns[ctx->current_pattern].row[ctx->current_row][c];
