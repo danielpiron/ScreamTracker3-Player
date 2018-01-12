@@ -148,6 +148,7 @@ struct S3MChannel {
         int is_fine_slide;
         int retrig_counter;
         int retrig_frequency;
+        int retrig_volume_modifier;
     } effects;
 };
 

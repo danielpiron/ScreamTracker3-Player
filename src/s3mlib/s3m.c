@@ -365,6 +365,7 @@ void s3m_process_tick(struct S3MPlayerContext* ctx)
                 break;
             case ST3_EFFECT_RETRIG:
                 if (entry->cominfo) {
+                    ctx->channel[c].effects.retrig_volume_modifier = x;
                     ctx->channel[c].effects.retrig_frequency = y;
                 }
                 ctx->channel[c].effects.retrig_counter = 0;
@@ -453,7 +454,56 @@ void s3m_process_tick(struct S3MPlayerContext* ctx)
             if (ctx->channel[c].effects.retrig_counter++ == ctx->channel[c].effects.retrig_frequency) {
                 ctx->channel[c].note_on = 1;
                 ctx->channel[c].effects.retrig_counter = 0;
+
+                switch (ctx->channel[c].effects.retrig_volume_modifier) {
+                    case 1:
+                        ctx->channel[c].volume -= 1;
+                        break;
+                    case 2:
+                        ctx->channel[c].volume -= 2;
+                        break;
+                    case 3:
+                        ctx->channel[c].volume -= 4;
+                        break;
+                    case 4:
+                        ctx->channel[c].volume -= 8;
+                        break;
+                    case 5:
+                        ctx->channel[c].volume -= 16;
+                        break;
+                    case 6:
+                        ctx->channel[c].volume = 2 * ctx->channel[c].volume / 3;
+                        break;
+                    case 7:
+                        ctx->channel[c].volume = ctx->channel[c].volume / 2;
+                        break;
+                    case 9:
+                        ctx->channel[c].volume += 1;
+                        break;
+                    case 10:
+                        ctx->channel[c].volume += 2;
+                        break;
+                    case 11:
+                        ctx->channel[c].volume += 4;
+                        break;
+                    case 12:
+                        ctx->channel[c].volume += 8;
+                        break;
+                    case 13:
+                        ctx->channel[c].volume += 16;
+                        break;
+                    case 14:
+                        ctx->channel[c].volume = 3 * ctx->channel[c].volume / 2;
+                        break;
+                    case 15:
+                        ctx->channel[c].volume = ctx->channel[c].volume * 2;
+                        break;
+                    default:
+                        break;
+                }
             }
+            if (ctx->channel[c].volume > 64) ctx->channel[c].volume = 64;
+            if (ctx->channel[c].volume < 0) ctx->channel[c].volume = 0;
         }
     }
     ctx->tick_counter--;
