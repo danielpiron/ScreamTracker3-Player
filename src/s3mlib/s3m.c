@@ -380,6 +380,9 @@ void s3m_process_tick(struct S3MPlayerContext* ctx)
                 ctx->channel[c].effects.retrig_counter = 0;
                 ctx->channel[c].current_effect = ST3_EFFECT_RETRIG;
                 break;
+            case ST3_EFFECT_TEMPO:
+                s3m_player_set_tempo(ctx, entry->cominfo);
+                break;
             default:
                 ctx->channel[c].current_effect = 0;
             }
