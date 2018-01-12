@@ -195,7 +195,7 @@ void s3m_player_init(struct S3MPlayerContext* ctx, struct S3MFile* file, int sam
 
     /* Default settings */
     ctx->current_row = 0;
-    ctx->song_speed = 6;
+    ctx->song_speed = ctx->file->header->initial_speed;
     ctx->tick_counter = ctx->song_speed;
     ctx->samples_until_next_tick = 0;
     ctx->sample_rate = 48000;
