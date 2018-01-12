@@ -356,10 +356,11 @@ void s3m_process_tick(struct S3MPlayerContext* ctx)
                 ctx->channel[c].current_effect = ST3_EFFECT_TONE_PORTAMENTO;
                 break;
             case ST3_EFFECT_VIBRATO:
-                if (entry->cominfo) {
+                if (x)
                     ctx->channel[c].effects.vibrato.speed = x;
+                if (y)
                     ctx->channel[c].effects.vibrato.depth = y;
-                }
+
                 ctx->channel[c].current_effect = ST3_EFFECT_VIBRATO;
                 break;
             case ST3_EFFECT_RETRIG:
@@ -409,8 +410,8 @@ void s3m_process_tick(struct S3MPlayerContext* ctx)
             || ctx->channel[c].current_effect == ST3_EFFECT_VIBRATO_AND_VOLUME_SLIDE) {
             if (ctx->tick_counter != ctx->song_speed) {
                 int s = 64 * sin(2 * M_PI * ((ctx->channel[c].effects.vibrato.position & 0xFF) / 255.0));
-                int delta = (4 * ctx->channel[c].effects.vibrato.depth * s) >> 6;
-                ctx->channel[c].period +=  delta;
+                int delta = (4 * ctx->channel[c].effects.vibrato.depth * s) >> 5;
+                ctx->channel[c].period = ctx->channel[c].effects.vibrato.old_period +  delta;
                 ctx->channel[c].effects.vibrato.position += ctx->channel[c].effects.vibrato.speed * 4;
             }
         }
