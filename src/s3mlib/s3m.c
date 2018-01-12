@@ -239,7 +239,7 @@ void s3m_accumulate_sample_stream(float* buffer, int length, struct S3MSampleStr
     ss->sample = chan->instrument;
     ss->sample_step = get_note_herz(chan->period) / sample_rate;
     if (chan->note_on) {
-        ss->sample_index = 0;
+        ss->sample_index = chan->effects.sample_offset;
         chan->note_on = 0;
     }
 
@@ -372,6 +372,9 @@ void s3m_process_tick(struct S3MPlayerContext* ctx)
 
                 ctx->channel[c].current_effect = ST3_EFFECT_VIBRATO;
                 break;
+            case ST3_EFFECT_SET_SAMPLE_OFFSET:
+                ctx->channel[c].effects.sample_offset = entry->cominfo * 256;
+                break;
             case ST3_EFFECT_RETRIG:
                 if (entry->cominfo) {
                     ctx->channel[c].effects.retrig_volume_modifier = x;
@@ -395,6 +398,7 @@ void s3m_process_tick(struct S3MPlayerContext* ctx)
                 break;
             default:
                 ctx->channel[c].current_effect = 0;
+                ctx->channel[c].effects.sample_offset = 0;
             }
 
         }
