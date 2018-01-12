@@ -149,6 +149,7 @@ struct S3MChannel {
         int retrig_counter;
         int retrig_frequency;
         int retrig_volume_modifier;
+        int retrig_delay;
     } effects;
 };
 

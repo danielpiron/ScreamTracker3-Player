@@ -383,6 +383,16 @@ void s3m_process_tick(struct S3MPlayerContext* ctx)
             case ST3_EFFECT_TEMPO:
                 s3m_player_set_tempo(ctx, entry->cominfo);
                 break;
+            case ST3_EFFECT_SPECIAL:
+                /* TODO: Figure out how to really handle these special commands */
+                switch (x) {
+                case 0x0D:
+                    ctx->channel[c].effects.retrig_delay = y;
+                    ctx->channel[c].note_on = 0;
+                    break;
+                }
+                ctx->channel[c].current_effect = ST3_EFFECT_SPECIAL;
+                break;
             default:
                 ctx->channel[c].current_effect = 0;
             }
@@ -516,6 +526,11 @@ void s3m_process_tick(struct S3MPlayerContext* ctx)
             }
             if (ctx->channel[c].volume > 64) ctx->channel[c].volume = 64;
             if (ctx->channel[c].volume < 0) ctx->channel[c].volume = 0;
+        }
+        if (ctx->channel[c].current_effect == ST3_EFFECT_SPECIAL) {
+            /* TODO: Generalize note triggering. */
+            if (ctx->channel[c].effects.retrig_delay-- == 0)
+                ctx->channel[c].note_on = 1;
         }
     }
     ctx->tick_counter--;
