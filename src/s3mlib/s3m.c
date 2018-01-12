@@ -270,7 +270,7 @@ void s3m_process_tick(struct S3MPlayerContext* ctx)
 
             struct S3MPatternEntry* entry = &ctx->patterns[ctx->current_pattern].row[ctx->current_row][c];
 
-            if (entry->note != 0xFF && entry->note != 0xFE) {
+            if (entry->note != 0xFF) {
                 if (entry->inst) {
                     ctx->channel[c].instrument = &ctx->file->instruments[entry->inst - 1];
                     ctx->channel[c].volume = (entry->vol == 0xFF)
@@ -288,6 +288,15 @@ void s3m_process_tick(struct S3MPlayerContext* ctx)
                     }
                 }
             } else {
+
+                if (entry->inst) {
+                    ctx->channel[c].instrument = &ctx->file->instruments[entry->inst - 1];
+                    ctx->channel[c].volume = (entry->vol == 0xFF)
+                        ? ctx->channel[c].instrument->header->default_volume
+                        : entry->vol;
+
+                }
+
                 if (entry->vol != 0xFF)
                     ctx->channel[c].volume = entry->vol;
 
