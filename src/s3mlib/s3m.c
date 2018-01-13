@@ -54,18 +54,18 @@ void render_pattern_entry(char *buf, const struct S3MPatternEntry* entry) {
         }
     }
     if (entry->inst) {
-      snprintf(digit_buf, sizeof(digit_buf), "%02d", entry->inst);
+      sprintf(digit_buf, "%02d", entry->inst);
       memcpy(&buf[4], digit_buf, 2);
     }
 
     if (entry->vol != 255) {
-      snprintf(digit_buf, sizeof(digit_buf), "%02d", entry->vol);
+      sprintf(digit_buf, "%02d", entry->vol);
       memcpy(&buf[7], digit_buf, 2);
     }
 
     if (entry->command != 255) {
         buf[10] = command_names[entry->command];
-        snprintf(digit_buf, sizeof(digit_buf), "%02X", entry->cominfo);
+        sprintf(digit_buf, "%02X", entry->cominfo);
         memcpy(&buf[11], digit_buf, 2);
     }
 }
