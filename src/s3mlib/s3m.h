@@ -151,6 +151,8 @@ struct S3MChannel {
         int retrig_volume_modifier;
         int retrig_delay;
         int sample_offset;
+        int arpeggio_notes[3];
+        int arpeggio_index;
     } effects;
 };
 

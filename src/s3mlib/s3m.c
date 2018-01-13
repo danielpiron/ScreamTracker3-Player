@@ -260,6 +260,16 @@ void s3m_accumulate_sample_stream(float* buffer, int length, struct S3MSampleStr
     }
 }
 
+int s3m_note_offset(int base_note, int offset) {
+    int octave = base_note >> 4;
+    int note = base_note & 0x0F;
+
+    note = (note + offset) % 12;
+    octave += offset / 12;
+
+    return octave << 4 | note;
+}
+
 void s3m_process_tick(struct S3MPlayerContext* ctx)
 {
     int c, x, y, last_row = 64;
@@ -371,6 +381,19 @@ void s3m_process_tick(struct S3MPlayerContext* ctx)
                     ctx->channel[c].effects.vibrato.depth = y;
 
                 ctx->channel[c].current_effect = ST3_EFFECT_VIBRATO;
+                break;
+            case ST3_EFFECT_ARPEGGIO:
+
+                if (entry->note != 255 && entry->note != 254)
+                    ctx->channel[c].effects.arpeggio_notes[0] = entry->note;
+
+                if (entry->cominfo) {
+                    int base_note = ctx->channel[c].effects.arpeggio_notes[0];
+                    ctx->channel[c].effects.arpeggio_notes[1] = s3m_note_offset(base_note, x);
+                    ctx->channel[c].effects.arpeggio_notes[2] = s3m_note_offset(base_note, y);
+                    ctx->channel[c].effects.arpeggio_index = 0;
+                }
+                ctx->channel[c].current_effect = ST3_EFFECT_ARPEGGIO;
                 break;
             case ST3_EFFECT_SET_SAMPLE_OFFSET:
                 ctx->channel[c].effects.sample_offset = entry->cominfo * 256;
@@ -535,6 +558,12 @@ void s3m_process_tick(struct S3MPlayerContext* ctx)
             /* TODO: Generalize note triggering. */
             if (ctx->channel[c].effects.retrig_delay-- == 0)
                 ctx->channel[c].note_on = 1;
+        }
+        if (ctx->channel[c].current_effect == ST3_EFFECT_ARPEGGIO) {
+            int c2_speed = ctx->channel[c].instrument->header->c2_speed;
+            int arp_note = ctx->channel[c].effects.arpeggio_notes[ctx->channel[c].effects.arpeggio_index];
+            ctx->channel[c].period = get_note_st3period(arp_note, c2_speed);
+            ctx->channel[c].effects.arpeggio_index = (ctx->channel[c].effects.arpeggio_index + 1) % 3;
         }
     }
     ctx->tick_counter--;
