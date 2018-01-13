@@ -76,7 +76,7 @@ struct S3MSampleHeader {
     unsigned char type;
     char dos_filename[12];
     char null_terminator;
-    short sample_data_parapointer;
+    unsigned short sample_data_parapointer;
     int length;
     int loop_begin;
     int loop_end;
