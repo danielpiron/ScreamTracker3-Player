@@ -233,6 +233,9 @@ void s3m_accumulate_sample_stream(float* buffer, int length, struct S3MSampleStr
     float volume = chan->volume / 64.0;
     float panning = chan->panning / 15.0;
 
+    if (chan->instrument == NULL)
+        return;
+
     if (volume == 0)
         return;
 
