@@ -52,65 +52,69 @@ void read_sample_record(struct ModSample* rec, FILE* fp)
     }
 }
 
-void print_sample(struct ModSample* sample)
+int load_mod(struct Mod* mod, FILE* fp)
 {
-    printf("\tName: %s\n", sample->name);
-    printf("\tLength: %d\n", sample->length);
-    printf("\tVolume: %d\n", sample->volume);
-    printf("\tFine Tuning: %d\n", sample->fine_tuning);
-    printf("\tLooping Enabled: %s\n", sample->is_looping ? "YES" : "NO");
-    if (sample->is_looping) {
-        printf("\tLoop Start: %d\n", sample->loop_start);
-        printf("\tLoop End: %d\n", sample->loop_end);
-    }
+    char signature[5];
+    int i;
+
+    fseek(fp, 0x438, SEEK_SET);
+    fread(signature, sizeof(char), 4, fp);
+    signature[4] = '\0';
+
+    /* Check for "M.K." signature */
+    if (strncmp(signature, "M.K.", 4) != 0)
+        return false;
+
+    rewind(fp);
+    fread(mod->song_title, sizeof(char), 20, fp);
+
+    /* There are always 31 sample records. Empty samples are indicated by lengths of 0 */
+    for (i = 0; i < 31; i++)
+        read_sample_record(&mod->samples[i], fp);
+
+    fread(&mod->song_length, sizeof(char), 1, fp);
+    /* Skip a (typically) unused byte */
+    fseek(fp, 1, SEEK_CUR);
+    fread(mod->pattern_table, sizeof(char), 128, fp);
+
+    /* The number of patterns is equal to the highest value in the pattern table */
+    for (i = 0, mod->pattern_count = 0; i < mod->song_length; i++)
+        if (mod->pattern_table[i] > mod->pattern_count)
+            mod->pattern_count = mod->pattern_table[i];
+
+    /* Skip already loaded signature */
+    fseek(fp, 4, SEEK_CUR);
+
+    return true;
 }
 
 int main()
 {
-    int i;
     FILE* fp;
     struct Mod mod;
-    char signature[5];
 
     if ((fp = fopen("/Users/pironvila/Downloads/soul-o-matic.mod", "rb"))) {
 
-        fseek(fp, 0x438, SEEK_SET);
-        fread(signature, sizeof(char), 4, fp);
-        signature[4] = '\0';
+        if (load_mod(&mod, fp)) {
+            int i;
+            char* prefix = "";
 
-        printf("Signature %s\n", signature);
-        if (strncmp(signature, "M.K.", 4) == 0) {
-            printf("MOD file signature found\n");
+            printf("Song Title: %s\n", mod.song_title);
+            printf("Song Length: %d\n", mod.song_length);
+            printf("Pattern Count: %d\n", mod.pattern_count);
+
+            printf("Pattern Order: ");
+            for (i = 0; i < mod.song_length; i++) {
+                printf("%s%d", prefix, mod.pattern_table[i]);
+                prefix = ", ";
+            }
+            printf("\n");
+
+            for (i = 0; i < 31; i++)
+                printf("%02d: %-20s (Len: %d, Beg: %d, End: %d)\n",
+                    i, mod.samples[i].name, mod.samples[i].length,
+                    mod.samples[i].loop_start, mod.samples[i].loop_end);
         }
-
-        rewind(fp);
-        fread(mod.song_title, sizeof(char), 20, fp);
-
-        printf("Song Title: %s\n", mod.song_title);
-
-        for (i = 0; i < 31; i++) {
-            read_sample_record(&mod.samples[i], fp);
-            printf("SAMPLE #%d\n", i + 1);
-            print_sample(&mod.samples[i]);
-        }
-
-        printf("POSITION: %d\n", (int)ftell(fp));
-
-        fread(&mod.song_length, sizeof(char), 1, fp);
-        fseek(fp, 1, SEEK_CUR); /* Skip a (typically) unused byte */
-
-        fread(mod.pattern_table, sizeof(char), 128, fp);
-
-        printf("Song Length: %d\n", mod.song_length);
-        printf("Pattern Table:\n");
-        for (i = 0, mod.pattern_count = 0; i < mod.song_length; i++) {
-            if (mod.pattern_table[i] > mod.pattern_count)
-                mod.pattern_count = mod.pattern_table[i];
-            printf("\t%d\n", mod.pattern_table[i]);
-        }
-
-        printf("Pattern Count: %d\n", mod.pattern_count);
-
         fclose(fp);
     }
 }
