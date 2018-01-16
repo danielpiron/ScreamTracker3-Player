@@ -20,7 +20,8 @@ struct ModSample {
 struct Mod {
     char song_title[20];
     struct ModSample samples[31];
-    int pattern_count;
+    char song_length;
+    char pattern_count;
     char pattern_table[128];
 };
 
@@ -89,6 +90,23 @@ int main()
             printf("SAMPLE #%d\n", i + 1);
             print_sample(&mod.samples[i]);
         }
+
+        printf("POSITION: %d\n", (int)ftell(fp));
+
+        fread(&mod.song_length, sizeof(char), 1, fp);
+        fseek(fp, 1, SEEK_CUR); /* Skip a (typically) unused byte */
+
+        fread(mod.pattern_table, sizeof(char), 128, fp);
+
+        printf("Song Length: %d\n", mod.song_length);
+        printf("Pattern Table:\n");
+        for (i = 0, mod.pattern_count = 0; i  < mod.song_length; i++) {
+            if (mod.pattern_table[i] > mod.pattern_count)
+                mod.pattern_count = mod.pattern_table[i];
+            printf("\t%d\n", mod.pattern_table[i]);
+        }
+
+        printf("Pattern Count: %d\n", mod.pattern_count);
 
         fclose(fp);
     }
