@@ -14,7 +14,7 @@ struct ModSample {
     char volume;
     char fine_tuning;
     bool is_looping;
-    unsigned char *data;
+    unsigned char* data;
 };
 
 struct Mod {
@@ -25,14 +25,16 @@ struct Mod {
     char pattern_table[128];
 };
 
-int fread_big_endian_word(FILE *fp) {
+int fread_big_endian_word(FILE* fp)
+{
     unsigned char hi_byte = 0, lo_byte = 0;
     fread(&hi_byte, sizeof(char), 1, fp);
     fread(&lo_byte, sizeof(char), 1, fp);
     return hi_byte << 8 | lo_byte;
 }
 
-void read_sample_record(struct ModSample* rec, FILE* fp) {
+void read_sample_record(struct ModSample* rec, FILE* fp)
+{
     int half_loop_length;
     fread(rec->name, sizeof(char), 22, fp);
     rec->length = fread_big_endian_word(fp) * 2;
@@ -45,23 +47,24 @@ void read_sample_record(struct ModSample* rec, FILE* fp) {
     half_loop_length = fread_big_endian_word(fp) * 2;
 
     if (half_loop_length > 1) {
-        rec->loop_end = rec->loop_start + half_loop_length  * 2;
+        rec->loop_end = rec->loop_start + half_loop_length * 2;
         rec->is_looping = true;
     }
 }
 
-void print_sample(struct ModSample* sample) {
+void print_sample(struct ModSample* sample)
+{
     printf("\tName: %s\n", sample->name);
     printf("\tLength: %d\n", sample->length);
     printf("\tVolume: %d\n", sample->volume);
-    printf("\tFine Tuning: %d\n" , sample->fine_tuning);
+    printf("\tFine Tuning: %d\n", sample->fine_tuning);
     printf("\tLooping Enabled: %s\n", sample->is_looping ? "YES" : "NO");
     if (sample->is_looping) {
         printf("\tLoop Start: %d\n", sample->loop_start);
         printf("\tLoop End: %d\n", sample->loop_end);
     }
 }
-        
+
 int main()
 {
     int i;
@@ -100,7 +103,7 @@ int main()
 
         printf("Song Length: %d\n", mod.song_length);
         printf("Pattern Table:\n");
-        for (i = 0, mod.pattern_count = 0; i  < mod.song_length; i++) {
+        for (i = 0, mod.pattern_count = 0; i < mod.song_length; i++) {
             if (mod.pattern_table[i] > mod.pattern_count)
                 mod.pattern_count = mod.pattern_table[i];
             printf("\t%d\n", mod.pattern_table[i]);
