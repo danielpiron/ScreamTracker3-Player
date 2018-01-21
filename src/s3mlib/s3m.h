@@ -173,6 +173,7 @@ struct S3MPlayerContext {
     int samples_until_next_tick;
     int sample_rate;
 
+    unsigned char* pattern_order;
     struct S3MPattern* patterns;
     int current_order;
     int current_pattern;

@@ -208,8 +208,9 @@ void s3m_player_init(struct S3MPlayerContext* ctx, struct S3MFile* file, int sam
         s3m_pattern_unpack(&ctx->patterns[i], &file->packed_patterns[i]);
     }
 
+    ctx->pattern_order = file->orders;
     ctx->current_order = 0;
-    ctx->current_pattern = file->orders[ctx->current_order];
+    ctx->current_pattern = ctx->pattern_order[ctx->current_order];
 
     memset(ctx->sample_stream, 0, sizeof(ctx->sample_stream));
     memset(ctx->channel, 0, sizeof(ctx->channel));
@@ -432,10 +433,10 @@ void s3m_process_tick(struct S3MPlayerContext* ctx)
         if (ctx->current_row == last_row) {
             ctx->current_order++;
             /* If we've reached the last order repeat song */
-            if (ctx->file->orders[ctx->current_order] == 0xFF)
+            if (ctx->pattern_order[ctx->current_order] == 0xFF)
                 ctx->current_order = 0;
 
-            ctx->current_pattern = ctx->file->orders[ctx->current_order];
+            ctx->current_pattern = ctx->pattern_order[ctx->current_order];
             printf("Current Pattern: %d\n", ctx->current_pattern);
             ctx->current_row = 0;
         }
