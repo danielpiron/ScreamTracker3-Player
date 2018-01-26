@@ -127,7 +127,7 @@ struct S3MPattern {
 };
 
 struct S3MChannel {
-    struct S3MSampleInstrument* instrument;
+    struct Sample* sample;
     int note_on;
     int period;
     int volume;
@@ -156,8 +156,17 @@ struct S3MChannel {
     } effects;
 };
 
+struct Sample {
+    float* sampledata;
+    int length;
+    int loop_begin;
+    int loop_end;
+    int c2_speed;
+    int volume;
+};
+
 struct S3MSampleStream {
-    struct S3MSampleInstrument* sample;
+    struct Sample* sample;
     struct S3MChannel* channel;
     float sample_index;
     float sample_step;
@@ -180,6 +189,7 @@ struct S3MPlayerContext {
 
     struct S3MChannel channel[32];
     struct S3MSampleStream sample_stream[16];
+    struct Sample sample[99];
 };
 
 extern int s3m_load(struct S3MFile*, const char*);

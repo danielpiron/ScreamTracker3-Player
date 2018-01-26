@@ -201,6 +201,30 @@ void s3m_player_init(struct S3MPlayerContext* ctx, struct S3MFile* file, int sam
     ctx->sample_rate = 48000;
     s3m_player_set_tempo(ctx, 125);
 
+    /* Initialize Samples */
+    memset(ctx->sample, 0, sizeof(ctx->sample));
+    for (i = 0; i < ctx->file->header->instrument_count; i++) {
+        if (ctx->file->instruments[i].header->type == 1) {
+            struct S3MSampleInstrument *inst = &ctx->file->instruments[i];
+            struct Sample *sample = &ctx->sample[i];
+            int j;
+
+            sample->length = inst->header->length;
+            sample->volume = inst->header->default_volume;
+            sample->c2_speed = inst->header->c2_speed;
+            sample->sampledata = malloc(sizeof(float) * sample->length);
+
+            /* Convert Sample data to float (0-255) -> (-1.0-1.0) */
+            for (j = 0; j <  sample->length; j++)
+                sample->sampledata[j] = 2.0 * inst->sampledata[j] / 255.0 - 1.0;
+
+            if (inst->header->flags & 1) {
+                ctx->sample[i].loop_begin = inst->header->loop_begin;
+                ctx->sample[i].loop_end = inst->header->loop_end;
+            }
+        }
+    }
+
     /* Allocate space for pattern data */
     ctx->patterns = malloc(sizeof(struct S3MPattern) * file->header->pattern_count);
     for (i = 0; i < file->header->pattern_count; i++) {
@@ -214,6 +238,7 @@ void s3m_player_init(struct S3MPlayerContext* ctx, struct S3MFile* file, int sam
 
     memset(ctx->sample_stream, 0, sizeof(ctx->sample_stream));
     memset(ctx->channel, 0, sizeof(ctx->channel));
+
 
     /* TODO: Channels need to be distributed according to channel settings */
     for (i = 0; i < 16; i++)
@@ -234,13 +259,13 @@ void s3m_accumulate_sample_stream(float* buffer, int length, struct S3MSampleStr
     float volume = chan->volume / 64.0;
     float panning = chan->panning / 15.0;
 
-    if (chan->instrument == NULL)
+    if (chan->sample == NULL)
         return;
 
     if (volume == 0)
         return;
 
-    ss->sample = chan->instrument;
+    ss->sample = chan->sample;
     ss->sample_step = get_note_herz(chan->period) / sample_rate;
     if (chan->note_on) {
         ss->sample_index = chan->effects.sample_offset;
@@ -252,11 +277,11 @@ void s3m_accumulate_sample_stream(float* buffer, int length, struct S3MSampleStr
         ss->sample_index += ss->sample_step;
 
         /* If looping is enabled and we've reached the loop end, loop back. */
-        if (ss->sample->header->flags & 1 && ss->sample_index >= ss->sample->header->loop_end)
-            ss->sample_index -= (ss->sample->header->loop_end - ss->sample->header->loop_begin);
+        if (ss->sample->loop_end && ss->sample_index >= ss->sample->loop_end)
+            ss->sample_index -= (ss->sample->loop_end - ss->sample->loop_begin);
 
-        if ((int)ss->sample_index < ss->sample->header->length) {
-            float sample = (2.0 * ss->sample->sampledata[(int)ss->sample_index] / 255.0 - 1.0);
+        if ((int)ss->sample_index < ss->sample->length) {
+            float sample = ss->sample->sampledata[(int)ss->sample_index];
             /* Put the same sample into left and right channels to mimic mono */
             *buffer++ += (1.0 - panning) * volume * sample;
             *buffer++ += panning * volume * sample;
@@ -286,17 +311,17 @@ void s3m_process_tick(struct S3MPlayerContext* ctx)
 
             if (entry->note != 0xFF && entry->note != 0xFE) {
                 if (entry->inst) {
-                    ctx->channel[c].instrument = &ctx->file->instruments[entry->inst - 1];
+                    ctx->channel[c].sample = &ctx->sample[entry->inst - 1];
                     ctx->channel[c].volume = (entry->vol == 0xFF)
-                        ? ctx->channel[c].instrument->header->default_volume
+                        ? ctx->channel[c].sample->volume
                         : entry->vol;
                 }
-                if (ctx->channel[c].instrument != NULL) {
+                if (ctx->channel[c].sample != NULL) {
                     if (entry->command == ST3_EFFECT_TONE_PORTAMENTO) {
-                        ctx->channel[c].effects.portamento_target = get_note_st3period(entry->note, ctx->channel[c].instrument->header->c2_speed);
+                        ctx->channel[c].effects.portamento_target = get_note_st3period(entry->note, ctx->channel[c].sample->c2_speed);
                     } else {
                         ctx->channel[c].effects.vibrato.position = 0;
-                        ctx->channel[c].period = get_note_st3period(entry->note, ctx->channel[c].instrument->header->c2_speed);
+                        ctx->channel[c].period = get_note_st3period(entry->note, ctx->channel[c].sample->c2_speed);
                         ctx->channel[c].effects.vibrato.old_period = ctx->channel[c].period;
                         ctx->channel[c].note_on = 1;
                     }
@@ -304,9 +329,9 @@ void s3m_process_tick(struct S3MPlayerContext* ctx)
             } else {
 
                 if (entry->note == 0xFF && entry->inst) {
-                    ctx->channel[c].instrument = &ctx->file->instruments[entry->inst - 1];
+                    ctx->channel[c].sample = &ctx->sample[entry->inst - 1];
                     ctx->channel[c].volume = (entry->vol == 0xFF)
-                        ? ctx->channel[c].instrument->header->default_volume
+                        ? ctx->channel[c].sample->volume
                         : entry->vol;
 
                 }
@@ -564,7 +589,7 @@ void s3m_process_tick(struct S3MPlayerContext* ctx)
                 ctx->channel[c].note_on = 1;
         }
         if (ctx->channel[c].current_effect == ST3_EFFECT_ARPEGGIO) {
-            int c2_speed = ctx->channel[c].instrument->header->c2_speed;
+            int c2_speed = ctx->channel[c].sample->c2_speed;
             int arp_note = ctx->channel[c].effects.arpeggio_notes[ctx->channel[c].effects.arpeggio_index];
             ctx->channel[c].period = get_note_st3period(arp_note, c2_speed);
             ctx->channel[c].effects.arpeggio_index = (ctx->channel[c].effects.arpeggio_index + 1) % 3;
