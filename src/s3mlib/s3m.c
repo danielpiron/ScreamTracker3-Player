@@ -211,7 +211,7 @@ void mod_player_init(struct S3MPlayerContext* ctx, struct Mod* mod, int sample_r
 
             sample->length = mod_sample->length;
             sample->volume = mod_sample->volume;
-            sample->c2_speed = 8636;
+            sample->c2_speed = 8363 * pow(2.0, mod_sample->fine_tuning / (12.0 * 9.0));
             sample->sampledata = malloc(sizeof(float) * sample->length);
 
             /* Convert Sample data to float (0-255) -> (-1.0-1.0) */
