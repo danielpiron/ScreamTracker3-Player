@@ -92,6 +92,7 @@ int load_mod(struct Mod* mod, FILE* fp)
     for (i = 0, mod->pattern_count = 0; i < mod->song_length; i++)
         if (mod->pattern_table[i] > mod->pattern_count)
             mod->pattern_count = mod->pattern_table[i];
+    mod->pattern_count++;
 
     /* Skip already loaded signature */
     fseek(fp, 4, SEEK_CUR);
