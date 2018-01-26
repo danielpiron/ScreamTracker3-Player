@@ -1,4 +1,5 @@
 #include "s3m.h"
+#include "mod.h"
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -184,6 +185,102 @@ void s3m_pattern_init(struct S3MPattern* pattern)
     }
 }
 
+void mod_player_init(struct S3MPlayerContext* ctx, struct Mod* mod, int sample_rate)
+{
+    int i;
+
+    memset(ctx, 0, sizeof(struct S3MPlayerContext));
+
+    ctx->sample_rate = sample_rate;
+
+    /* Default settings */
+    ctx->current_row = 0;
+    ctx->song_speed = 6;
+    ctx->tick_counter = ctx->song_speed;
+    ctx->samples_until_next_tick = 0;
+    ctx->sample_rate = sample_rate;
+    s3m_player_set_tempo(ctx, 125);
+
+    /* Initialize Samples */
+    memset(ctx->sample, 0, sizeof(ctx->sample));
+    for (i = 0; i < 31; i++) {
+        if (mod->samples[i].length) {
+            struct ModSample *mod_sample = &mod->samples[i];
+            struct Sample *sample = &ctx->sample[i];
+            int j;
+
+            sample->length = mod_sample->length;
+            sample->volume = mod_sample->volume;
+            sample->c2_speed = 8636;
+            sample->sampledata = malloc(sizeof(float) * sample->length);
+
+            /* Convert Sample data to float (0-255) -> (-1.0-1.0) */
+            for (j = 0; j <  sample->length; j++)
+                sample->sampledata[j] = 2.0 * (mod_sample->data[j] + 128) / 255.0 - 1.0;
+
+            if (mod_sample->is_looping) {
+                ctx->sample[i].loop_begin = mod_sample->loop_point - mod_sample->loop_length;
+                ctx->sample[i].loop_end = mod_sample->loop_point;
+            }
+        }
+    }
+
+    /* Allocate space for pattern data */
+    ctx->patterns = malloc(sizeof(struct S3MPattern) * mod->pattern_count);
+    for (i = 0; i < mod->pattern_count; i++) {
+        int r, c, j, note_index;
+        s3m_pattern_init(&ctx->patterns[i]);
+        for (r = 0; r < 64; r++)
+            for (c = 0; c < 4; c++) {
+                struct S3MPatternEntry *entry = &ctx->patterns[i].row[r][c];
+                struct ModPatternEntry *modentry = &mod->pattern[i].row[r][c];
+                if (modentry->note_period) {
+                    note_index = -1;
+                    /* find note index in amiga table */
+                    for (j = 0; j < 60; j++)
+                        if (amiga_period_table[j] == modentry->note_period) {
+                            note_index = j;
+                            break;
+                        }
+                    entry->note = (note_index / 12 + 2) << 4 | (note_index % 12);
+                }
+                entry->inst = modentry->instrument;
+                switch (modentry->effect) {
+                case MOD_EFFECT_SET_VOLUME:
+                    entry->vol = modentry->effect_data;
+                    break;
+                case MOD_EFFECT_SET_SPEED:
+                    entry->command = ST3_EFFECT_SET_SPEED;
+                    entry->cominfo = modentry->effect_data;
+                    break;
+                default:
+                    break;
+                }
+
+            }
+    }
+
+    /* TODO: We are going to need to copy this */
+    ctx->pattern_order = (unsigned char *)mod->pattern_table;
+    ctx->current_order = 0;
+    ctx->current_pattern = ctx->pattern_order[ctx->current_order];
+
+    memset(ctx->sample_stream, 0, sizeof(ctx->sample_stream));
+    memset(ctx->channel, 0, sizeof(ctx->channel));
+
+
+    /* TODO: Channels need to be distributed according to channel settings */
+    for (i = 0; i < 16; i++)
+        ctx->sample_stream[i].channel = &ctx->channel[i];
+
+    /* Hardcode some default panning values */
+    for (i = 0; i < 8; i++) {
+        ctx->channel[i * 2].panning = 0x03; /* Even channels are left dominant */
+        ctx->channel[i * 2 + 1].panning = 0x0C; /* Odd channels are right dominant */
+    }
+
+    printf("Current Pattern: %d\n", ctx->current_pattern);
+}
 void s3m_player_init(struct S3MPlayerContext* ctx, struct S3MFile* file, int sample_rate)
 {
     int i;

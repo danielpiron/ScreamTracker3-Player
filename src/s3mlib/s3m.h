@@ -191,8 +191,11 @@ struct S3MPlayerContext {
     struct Sample sample[99];
 };
 
+struct Mod;
+
 extern int s3m_load(struct S3MFile*, const char*);
 extern void s3m_render_audio(float*, int, struct S3MPlayerContext*);
 extern void s3m_player_init(struct S3MPlayerContext*, struct S3MFile*, int);
+extern void mod_player_init(struct S3MPlayerContext*, struct Mod*, int);
 
 #endif
