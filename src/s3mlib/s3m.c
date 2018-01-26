@@ -219,8 +219,8 @@ void mod_player_init(struct S3MPlayerContext* ctx, struct Mod* mod, int sample_r
                 sample->sampledata[j] = 2.0 * (mod_sample->data[j] + 128) / 255.0 - 1.0;
 
             if (mod_sample->is_looping) {
-                ctx->sample[i].loop_begin = mod_sample->loop_point - mod_sample->loop_length;
-                ctx->sample[i].loop_end = mod_sample->loop_point;
+                ctx->sample[i].loop_begin = mod_sample->loop_point;
+                ctx->sample[i].loop_end = mod_sample->loop_point + mod_sample->loop_length;
             }
         }
     }
