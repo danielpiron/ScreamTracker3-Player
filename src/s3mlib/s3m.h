@@ -173,7 +173,6 @@ struct S3MSampleStream {
 };
 
 struct S3MPlayerContext {
-    struct S3MFile* file;
     int song_tempo;
     int song_speed;
     int tick_counter;

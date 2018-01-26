@@ -190,12 +190,11 @@ void s3m_player_init(struct S3MPlayerContext* ctx, struct S3MFile* file, int sam
 
     memset(ctx, 0, sizeof(struct S3MPlayerContext));
 
-    ctx->file = file;
     ctx->sample_rate = sample_rate;
 
     /* Default settings */
     ctx->current_row = 0;
-    ctx->song_speed = ctx->file->header->initial_speed;
+    ctx->song_speed = file->header->initial_speed;
     ctx->tick_counter = ctx->song_speed;
     ctx->samples_until_next_tick = 0;
     ctx->sample_rate = 48000;
@@ -203,9 +202,9 @@ void s3m_player_init(struct S3MPlayerContext* ctx, struct S3MFile* file, int sam
 
     /* Initialize Samples */
     memset(ctx->sample, 0, sizeof(ctx->sample));
-    for (i = 0; i < ctx->file->header->instrument_count; i++) {
-        if (ctx->file->instruments[i].header->type == 1) {
-            struct S3MSampleInstrument *inst = &ctx->file->instruments[i];
+    for (i = 0; i < file->header->instrument_count; i++) {
+        if (file->instruments[i].header->type == 1) {
+            struct S3MSampleInstrument *inst = &file->instruments[i];
             struct Sample *sample = &ctx->sample[i];
             int j;
 
