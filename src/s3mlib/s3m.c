@@ -253,6 +253,26 @@ void mod_player_init(struct S3MPlayerContext* ctx, struct Mod* mod, int sample_r
                     entry->command = ST3_EFFECT_SET_SPEED;
                     entry->cominfo = modentry->effect_data;
                     break;
+                case MOD_EFFECT_PORTAMENTO:
+                    entry->command = ST3_EFFECT_TONE_PORTAMENTO;
+                    entry->cominfo = modentry->effect_data;
+                    break;
+                case MOD_EFFECT_SLIDE_UP:
+                    entry->command = ST3_EFFECT_SLIDE_UP;
+                    entry->cominfo = modentry->effect_data;
+                    break;
+                case MOD_EFFECT_SLIDE_DOWN:
+                    entry->command = ST3_EFFECT_SLIDE_DOWN;
+                    entry->cominfo = modentry->effect_data;
+                    break;
+                case MOD_EFFECT_PATTERN_BREAK:
+                    entry->command = ST3_EFFECT_BREAK_PATTERN;
+                    entry->cominfo = modentry->effect_data;
+                    break;
+                case MOD_EFFECT_VOLUME_SLIDE:
+                    entry->command = ST3_EFFECT_VOLUME_SLIDE;
+                    entry->cominfo = modentry->effect_data;
+                    break;
                 default:
                     break;
                 }
