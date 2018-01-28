@@ -483,7 +483,8 @@ void s3m_process_tick(struct S3MPlayerContext* ctx)
             y = entry->cominfo & 15;
             switch (entry->command) {
             case ST3_EFFECT_SET_SPEED:
-                ctx->song_speed = entry->cominfo;
+                if (entry->cominfo)
+                    ctx->song_speed = entry->cominfo;
                 break;
             case ST3_EFFECT_BREAK_PATTERN:
                 last_row = ctx->current_row + 1;
