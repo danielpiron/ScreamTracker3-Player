@@ -189,6 +189,12 @@ struct S3MPlayerContext {
     struct S3MChannel channel[32];
     struct S3MSampleStream sample_stream[16];
     struct Sample sample[99];
+
+    struct {
+        int max;
+        int min;
+    } period_limits;
+
 };
 
 struct Mod;

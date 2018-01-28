@@ -203,6 +203,10 @@ void mod_player_init(struct S3MPlayerContext* ctx, struct Mod* mod, int sample_r
     ctx->sample_rate = sample_rate;
     s3m_player_set_tempo(ctx, 125);
 
+    /* Limits are multiplied by 4 to move into Scream Tracker periods */
+    ctx->period_limits.max = amiga_period_table[12] * 4; /* C-1 */
+    ctx->period_limits.min = amiga_period_table[47] * 4; /* B-A */
+
     /* Initialize Samples */
     memset(ctx->sample, 0, sizeof(ctx->sample));
     for (i = 0; i < 31; i++) {
@@ -723,6 +727,14 @@ void s3m_process_tick(struct S3MPlayerContext* ctx)
                 ctx->channel[c].effects.arpeggio_index = (ctx->channel[c].effects.arpeggio_index + 1) % 3;
             }
         }
+
+        if(ctx->period_limits.min && ctx->period_limits.max) {
+            if (ctx->channel[c].period > ctx->period_limits.max)
+                ctx->channel[c].period = ctx->period_limits.max;
+            if (ctx->channel[c].period < ctx->period_limits.min)
+                ctx->channel[c].period = ctx->period_limits.min;
+        }
+
     }
     ctx->tick_counter--;
 }
