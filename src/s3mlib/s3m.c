@@ -458,6 +458,7 @@ void s3m_process_tick(struct S3MPlayerContext* ctx)
                     } else {
                         ctx->channel[c].effects.vibrato.position = 0;
                         ctx->channel[c].period = get_note_st3period(entry->note, ctx->channel[c].sample->c2_speed);
+                        ctx->channel[c].effects.portamento_target = ctx->channel[c].period;
                         ctx->channel[c].effects.vibrato.old_period = ctx->channel[c].period;
                         ctx->channel[c].note_on = 1;
                     }
