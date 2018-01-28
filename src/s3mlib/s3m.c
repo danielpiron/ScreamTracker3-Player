@@ -479,6 +479,9 @@ void s3m_process_tick(struct S3MPlayerContext* ctx)
                 ctx->channel[c].period = ctx->channel[c].effects.vibrato.old_period;
             }
 
+            ctx->channel[c].current_effect = 0;
+            ctx->channel[c].effects.sample_offset = 0;
+
             x = entry->cominfo >> 4;
             y = entry->cominfo & 15;
             switch (entry->command) {
@@ -574,8 +577,7 @@ void s3m_process_tick(struct S3MPlayerContext* ctx)
                 ctx->channel[c].current_effect = ST3_EFFECT_SPECIAL;
                 break;
             default:
-                ctx->channel[c].current_effect = 0;
-                ctx->channel[c].effects.sample_offset = 0;
+                break;
             }
 
         }
