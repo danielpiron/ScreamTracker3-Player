@@ -249,6 +249,12 @@ void mod_player_init(struct S3MPlayerContext* ctx, struct Mod* mod, int sample_r
                 case MOD_EFFECT_SET_VOLUME:
                     entry->vol = modentry->effect_data;
                     break;
+                case MOD_EFFECT_ARPEGGIO:
+                    if (modentry->effect_data) {
+                        entry->command = ST3_EFFECT_ARPEGGIO;
+                        entry->cominfo = modentry->effect_data;
+                    }
+                    break;
                 case MOD_EFFECT_SET_SPEED:
                     entry->command = ST3_EFFECT_SET_SPEED;
                     entry->cominfo = modentry->effect_data;
