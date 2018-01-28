@@ -265,6 +265,14 @@ void mod_player_init(struct S3MPlayerContext* ctx, struct Mod* mod, int sample_r
                     entry->command = ST3_EFFECT_SET_SPEED;
                     entry->cominfo = modentry->effect_data;
                     break;
+                case MOD_EFFECT_PORTAMENTO_AND_VOLUME_SLIDE:
+                    entry->command = ST3_EFFECT_PORTAMENTO_AND_VOLUME_SLIDE;
+                    entry->cominfo = modentry->effect_data;
+                    break;
+                case MOD_EFFECT_VIBRATO_AND_VOLUME_SLIDE:
+                    entry->command = ST3_EFFECT_VIBRATO_AND_VOLUME_SLIDE;
+                    entry->cominfo = modentry->effect_data;
+                    break;
                 case MOD_EFFECT_PORTAMENTO:
                     entry->command = ST3_EFFECT_TONE_PORTAMENTO;
                     entry->cominfo = modentry->effect_data;
@@ -648,16 +656,18 @@ void s3m_process_tick(struct S3MPlayerContext* ctx)
         }
         if (ctx->channel[c].current_effect == ST3_EFFECT_TONE_PORTAMENTO
             || ctx->channel[c].current_effect == ST3_EFFECT_PORTAMENTO_AND_VOLUME_SLIDE) {
-           if (ctx->channel[c].period < ctx->channel[c].effects.portamento_target) {
-               ctx->channel[c].period += ctx->channel[c].effects.portamento_speed * 4;
-               if (ctx->channel[c].period > ctx->channel[c].effects.portamento_target)
-                   ctx->channel[c].period = ctx->channel[c].effects.portamento_target;
-           }
-           else if (ctx->channel[c].period > ctx->channel[c].effects.portamento_target) {
-               ctx->channel[c].period -= ctx->channel[c].effects.portamento_speed * 4;
-               if (ctx->channel[c].period < ctx->channel[c].effects.portamento_target)
-                   ctx->channel[c].period = ctx->channel[c].effects.portamento_target;
-           }
+            if (ctx->tick_counter != ctx->song_speed) {
+               if (ctx->channel[c].period < ctx->channel[c].effects.portamento_target) {
+                   ctx->channel[c].period += ctx->channel[c].effects.portamento_speed * 4;
+                   if (ctx->channel[c].period > ctx->channel[c].effects.portamento_target)
+                       ctx->channel[c].period = ctx->channel[c].effects.portamento_target;
+               }
+               else if (ctx->channel[c].period > ctx->channel[c].effects.portamento_target) {
+                   ctx->channel[c].period -= ctx->channel[c].effects.portamento_speed * 4;
+                   if (ctx->channel[c].period < ctx->channel[c].effects.portamento_target)
+                       ctx->channel[c].period = ctx->channel[c].effects.portamento_target;
+               }
+            }
         }
         if (ctx->channel[c].current_effect == ST3_EFFECT_RETRIG) {
             if (ctx->channel[c].effects.retrig_counter++ == ctx->channel[c].effects.retrig_frequency) {
