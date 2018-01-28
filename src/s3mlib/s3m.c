@@ -231,7 +231,7 @@ void mod_player_init(struct S3MPlayerContext* ctx, struct Mod* mod, int sample_r
         int r, c, j, note_index;
         s3m_pattern_init(&ctx->patterns[i]);
         for (r = 0; r < 64; r++)
-            for (c = 0; c < 4; c++) {
+            for (c = 0; c < mod->num_channels; c++) {
                 struct S3MPatternEntry *entry = &ctx->patterns[i].row[r][c];
                 struct ModPatternEntry *modentry = &mod->pattern[i].row[r][c];
                 if (modentry->note_period) {

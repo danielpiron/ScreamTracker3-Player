@@ -41,7 +41,7 @@ struct ModPatternEntry {
 };
 
 struct ModPattern {
-    struct ModPatternEntry row[64][4];
+    struct ModPatternEntry row[64][8];
 };
 
 struct Mod {
@@ -51,6 +51,7 @@ struct Mod {
     char pattern_count;
     char pattern_table[128];
     struct ModPattern pattern[128];
+    int num_channels;
 };
 
 extern int load_mod(struct Mod* mod, FILE* fp);

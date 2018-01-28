@@ -55,11 +55,11 @@ void read_pattern_entry(struct ModPatternEntry* entry, FILE* fp)
     entry->effect_data = channel_data[3];
 }
 
-void read_pattern(struct ModPattern* pattern, FILE* fp)
+void read_pattern(struct ModPattern* pattern, int num_channels, FILE* fp)
 {
     int i, j;
     for (i = 0; i < 64; i++)
-        for (j = 0; j < 4; j++)
+        for (j = 0; j < num_channels; j++)
             read_pattern_entry(&pattern->row[i][j], fp);
 }
 
@@ -73,7 +73,11 @@ int load_mod(struct Mod* mod, FILE* fp)
     signature[4] = '\0';
 
     /* Check for "M.K." signature */
-    if (strncmp(signature, "M.K.", 4) != 0)
+    if (strncmp(signature, "M.K.", 4) == 0)
+        mod->num_channels = 4;
+    else if (strncmp(signature, "8CHN", 4) == 0)
+        mod->num_channels = 8;
+    else
         return 0;
 
     rewind(fp);
@@ -99,7 +103,7 @@ int load_mod(struct Mod* mod, FILE* fp)
 
     /* Begins pattern data. 4 bytes * #channels * 64 rows*/
     for (i = 0; i < mod->pattern_count; i++)
-        read_pattern(&mod->pattern[i], fp);
+        read_pattern(&mod->pattern[i], mod->num_channels, fp);
 
     printf("Start of Sample Data %d", (int)ftell(fp));
 
