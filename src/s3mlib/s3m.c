@@ -440,7 +440,7 @@ void s3m_process_tick(struct S3MPlayerContext* ctx)
                         ? ctx->channel[c].sample->volume
                         : entry->vol;
                 }
-                if (ctx->channel[c].sample != NULL) {
+                if (ctx->channel[c].sample->sampledata != NULL) {
                     if (entry->command == ST3_EFFECT_TONE_PORTAMENTO) {
                         ctx->channel[c].effects.portamento_target = get_note_st3period(entry->note, ctx->channel[c].sample->c2_speed);
                     } else {
@@ -714,10 +714,12 @@ void s3m_process_tick(struct S3MPlayerContext* ctx)
                 ctx->channel[c].note_on = 1;
         }
         if (ctx->channel[c].current_effect == ST3_EFFECT_ARPEGGIO) {
-            int c2_speed = ctx->channel[c].sample->c2_speed;
-            int arp_note = ctx->channel[c].effects.arpeggio_notes[ctx->channel[c].effects.arpeggio_index];
-            ctx->channel[c].period = get_note_st3period(arp_note, c2_speed);
-            ctx->channel[c].effects.arpeggio_index = (ctx->channel[c].effects.arpeggio_index + 1) % 3;
+            if (ctx->channel[c].sample->sampledata) {
+                int c2_speed = ctx->channel[c].sample->c2_speed;
+                int arp_note = ctx->channel[c].effects.arpeggio_notes[ctx->channel[c].effects.arpeggio_index];
+                ctx->channel[c].period = get_note_st3period(arp_note, c2_speed);
+                ctx->channel[c].effects.arpeggio_index = (ctx->channel[c].effects.arpeggio_index + 1) % 3;
+            }
         }
     }
     ctx->tick_counter--;
