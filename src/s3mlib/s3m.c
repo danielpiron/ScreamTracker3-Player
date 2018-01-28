@@ -139,6 +139,8 @@ static float get_note_herz(int note_st3period)
 
 static void s3m_player_set_tempo(struct S3MPlayerContext* ctx, int tempo)
 {
+    if (tempo <= 0) return;
+
     ctx->song_tempo = tempo;
     ctx->samples_per_tick = 2.5 / tempo * ctx->sample_rate;
 }
@@ -321,7 +323,7 @@ void s3m_player_init(struct S3MPlayerContext* ctx, struct S3MFile* file, int sam
     ctx->tick_counter = ctx->song_speed;
     ctx->samples_until_next_tick = 0;
     ctx->sample_rate = 48000;
-    s3m_player_set_tempo(ctx, 125);
+    s3m_player_set_tempo(ctx, file->header->initial_tempo);
 
     /* Initialize Samples */
     memset(ctx->sample, 0, sizeof(ctx->sample));
