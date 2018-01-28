@@ -1,7 +1,9 @@
 #include "portaudio.h"
 #include "s3m.h"
 #include "mod.h"
+#include <ctype.h>
 #include <stdio.h>
+#include <string.h>
 
 #define SAMPLE_RATE 48000
 
@@ -24,6 +26,13 @@ int player_callback(
     return paContinue;
 }
 
+void strlower(char *s) {
+    while(*s) {
+        *s = tolower(*s);
+        s++;
+    }
+}
+
 int main(int argc, char* argv[])
 {
     PaStreamParameters output_params;
@@ -32,10 +41,11 @@ int main(int argc, char* argv[])
     FILE *fp;
 
     struct S3MPlayerContext player;
-    /* struct S3MFile s3m; */
+    struct S3MFile s3m;
     struct Mod mod;
 
     char* filename;
+    char extension[16];
 
     if (argc < 2) {
         fprintf(stderr, "Please enter a filename\n");
@@ -43,23 +53,26 @@ int main(int argc, char* argv[])
     }
 
     filename = argv[1];
-    /* 
-    if (!s3m_load(&s3m, filename)) {
-        fprintf(stderr, "Errors loading S3M File\n");
-        return 1;
+    /* snip the last four characters */
+    strcpy(extension, &filename[strlen(filename) - 4]);
+    strlower(extension);
+
+    if (strncmp(extension, ".s3m", 4) == 0) {
+        if (!s3m_load(&s3m, filename)) {
+            fprintf(stderr, "Errors loading S3M File\n");
+            return 1;
+        }
+        s3m_player_init(&player, &s3m, SAMPLE_RATE);
+    }
+    if (strncmp(extension, ".mod", 4) == 0) {
+        fp = fopen(filename, "rb");
+        if (!load_mod(&mod, fp)) {
+            fprintf(stderr, "Errors loading MOD File\n");
+            return 1;
+        }
+        mod_player_init(&player, &mod, SAMPLE_RATE);
     }
 
-    s3m_player_init(&player, &s3m, SAMPLE_RATE);
-*/
-
-    fp = fopen(filename, "rb");
-    
-    if (!load_mod(&mod, fp)) {
-        fprintf(stderr, "Errors loading S3M File\n");
-        return 1;
-    }
-
-    mod_player_init(&player, &mod, SAMPLE_RATE);
     err = Pa_Initialize();
     if (err != paNoError) {
         fprintf(stderr, "Error: Initializing PortAudio.\n");
