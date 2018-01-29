@@ -262,7 +262,7 @@ void mod_player_init(struct S3MPlayerContext* ctx, struct Mod* mod, int sample_r
                     }
                     break;
                 case MOD_EFFECT_SET_SPEED:
-                    entry->command = ST3_EFFECT_SET_SPEED;
+                    entry->command = (modentry->effect_data < 0x20) ? ST3_EFFECT_SET_SPEED : ST3_EFFECT_TEMPO;
                     entry->cominfo = modentry->effect_data;
                     break;
                 case MOD_EFFECT_PORTAMENTO_AND_VOLUME_SLIDE:
