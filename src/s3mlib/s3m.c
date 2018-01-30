@@ -582,6 +582,10 @@ void s3m_process_tick(struct S3MPlayerContext* ctx)
             case ST3_EFFECT_SPECIAL:
                 /* TODO: Figure out how to really handle these special commands */
                 switch (x) {
+                case 0x08:
+                case 0x0A:
+                    ctx->channel[c].panning = y;
+                    break;
                 case 0x0D:
                     ctx->channel[c].effects.retrig_delay = y;
                     ctx->channel[c].note_on = 0;
