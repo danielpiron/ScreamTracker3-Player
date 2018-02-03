@@ -93,7 +93,7 @@ int load_mod(struct Mod* mod, FILE* fp)
     fread(mod->pattern_table, sizeof(char), 128, fp);
 
     /* The number of patterns is equal to the highest value in the pattern table */
-    for (i = 0, mod->pattern_count = 0; i < mod->song_length; i++)
+    for (i = 0, mod->pattern_count = 0; i < 128; i++)
         if (mod->pattern_table[i] > mod->pattern_count)
             mod->pattern_count = mod->pattern_table[i];
     mod->pattern_count++;
