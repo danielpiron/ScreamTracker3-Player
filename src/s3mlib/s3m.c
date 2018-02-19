@@ -418,8 +418,8 @@ void s3m_accumulate_sample_stream(float* buffer, int length, struct S3MSampleStr
 
         if ((int)ss->sample_index < ss->sample->length) {
             float sample = ss->sample->sampledata[(int)ss->sample_index];
-            *buffer++ += sin((1.0 - panning) * (M_PI/2.0)) * volume * sample;
-            *buffer++ += sin(panning * (M_PI / 2.0)) * volume * sample;
+            *buffer++ += (1.0 - panning) * volume * sample;
+            *buffer++ += panning * volume * sample;
         }
     }
 }
